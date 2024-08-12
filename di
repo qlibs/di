@@ -29,8 +29,8 @@
 
 [![MIT Licence](http://img.shields.io/badge/license-MIT-blue.svg)](https://opensource.org/license/mit)
 [![Version](https://badge.fury.io/gh/qlibs%2Fdi.svg)](https://github.com/qlibs/di/releases)
-[![build](https://img.shields.io/badge/build-blue.svg)](https://godbolt.org/z/E4s3EqWrM)
-[![Try it online](https://img.shields.io/badge/try%20it-online-blue.svg)]()
+[![build](https://img.shields.io/badge/build-blue.svg)]()
+[![Try it online](https://img.shields.io/badge/try%20it-online-blue.svg)](https://godbolt.org/z/E4s3EqWrM)
 
   > https://en.wikipedia.org/wiki/Dependency_injection
 
