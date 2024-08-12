@@ -37,19 +37,16 @@
 ### Use cases
 
 - Fully customizable generic factories
-  - Unified way with different polymorphism styles (`concepts, variant, type_erasure, CRTP, virtual`) as well as aggregates, classes, etc.
-  - Constructor order and types changes agnostic (Simplifies integration with 3rd party libraries)
 
-- Testing
-  - Different bindigns for `production` and `testing`
-
-- Policies
-- Logging
 
 ### Features
 
 - Single header (https://raw.githubusercontent.com/qlibs/di/main/di - for integration see [FAQ](#faq))
 - Minimal [API](#api)
+  - Unified way with different polymorphism styles (`concepts, variant, type_erasure, CRTP, virtual`) as well as aggregates, classes, etc.
+  - Constructor order and types changes agnostic (Simplifies integration with third party libraries)
+  - Testing (Different bindigns for `production` and `testing`)
+  - Policies, Logging
 - Verifies itself upon include (can be disabled with `-DNTEST` - see [FAQ](#faq))
 
 ### Requirements
