@@ -130,6 +130,13 @@ template<class T> struct remove_cv<volatile T> { using type = T; };
 template<class T> struct remove_cv<const volatile T> { using type = T; };
 template<class T> using remove_cv_t = typename remove_cv<T>::type;
 template<class T> using remove_cvref_t = remove_cv_t<remove_reference_t<T>>;
+template<class T, T V> struct integral_constant {
+  using value_type = T;
+  using type = integral_constant;
+  static constexpr T value = V;
+  [[nodiscard]] constexpr operator value_type() const noexcept { return value; }
+  [[nodiscard]] constexpr value_type operator()() const noexcept { return value; }
+};
 namespace detail {
 template<class T> struct provider { using value_type = T; };
 template<class, size_t> struct arg { friend constexpr auto get(arg); };
@@ -160,15 +167,6 @@ struct ctor_args<T> {
 
 template<class T> using ctor_args_t = typename ctor_args<type_traits::remove_cvref_t<T>>::type;
 template<class T> inline constexpr ctor_args_t<T> ctor_args_v{};
-
-template<class T, T Value>
-struct integral_constant {
-  using value_type = T;
-  using type = integral_constant;
-  static constexpr T value = Value;
-  [[nodiscard]] constexpr operator value_type() const noexcept { return value; }
-  [[nodiscard]] constexpr value_type operator()() const noexcept { return value; }
-};
 } // namespace type_traits
 
 namespace detail {
