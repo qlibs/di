@@ -36,13 +36,15 @@
 
 ### Use cases
 
-  > Fully customizable generic factories
-    > Unified way with different polymorphism styles (`concepts, variant, type_erasure, CRTP, virtual`) as well as aggregates, classes, etc.
-    > Constructor order and types changes agnostic (Simplifies integration with 3rd party libraries)
-  > Testing
-    > Different bindigns for `production` and `testing`
-  > Policies
-  > Logging
+- Fully customizable generic factories
+  - Unified way with different polymorphism styles (`concepts, variant, type_erasure, CRTP, virtual`) as well as aggregates, classes, etc.
+  - Constructor order and types changes agnostic (Simplifies integration with 3rd party libraries)
+
+- Testing
+  - Different bindigns for `production` and `testing`
+
+- Policies
+- Logging
 
 ### Features
 
