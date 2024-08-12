@@ -29,7 +29,7 @@
 
 [![MIT Licence](http://img.shields.io/badge/license-MIT-blue.svg)](https://opensource.org/license/mit)
 [![Version](https://badge.fury.io/gh/qlibs%2Fdi.svg)](https://github.com/qlibs/di/releases)
-[![build](https://img.shields.io/badge/build-blue.svg)]()
+[![build](https://img.shields.io/badge/build-blue.svg)](https://godbolt.org/z/E4s3EqWrM)
 [![Try it online](https://img.shields.io/badge/try%20it-online-blue.svg)]()
 
   > https://en.wikipedia.org/wiki/Dependency_injection
@@ -237,7 +237,7 @@ static_assert(([] {
       static_assert(2u == di::utility::overload{[](auto... ts) { return sizeof...(ts); }}(1, 2));
       static_assert(42 == di::utility::overload{[](int i) { return i; }}(42));
       static_assert(42 == di::utility::overload{[](int i) { return i; }, [](auto a) { return a; }}(42));
-      static_assert(4.2f == di::utility::overload{[](int i) { return i; }, [](auto a) { return a; }}(4.2f));
+      static_assert('_' == di::utility::overload{[](int i) { return i; }, [](auto a) { return a; }}('_'));
     }
   }
 
