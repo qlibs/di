@@ -158,27 +158,36 @@ template<class... Ts> struct overload : Ts... {
 };
 template<class... Ts> overload(Ts...) -> overload<Ts...>;
 
+template<std::size_t Priority = 1u> struct override : override<Priority - 1u> {};
+template<> struct override<0> {};
+
+namespace detail {
 template<class T> T failed();
 template<class T> [[nodiscard]] constexpr auto invoke(auto&& self) -> T {
-  if constexpr (requires { self.template operator()<T>(self); }) {
+  if constexpr (requires { self.template operator()<T>(self, override<10u>{}); }) {
+    return self.template operator()<T>(self, override<10u>{});
+  } else if constexpr (requires { self.template operator()<T>(self); }) {
     return self.template operator()<T>(self);
   } else {
     return failed<T>();
   }
 }
 
-template<auto N, class TSelf>
-auto parent(TSelf) -> typename TSelf::template parent<N>::type;
-
-template<class T, class... Ts>
+template<class T, std::size_t Index, class... Ts>
 struct wrapper : T {
   constexpr wrapper(T t) : T{t} {}
   using value_type = type_traits::type_list<Ts...>;
+
+  static constexpr auto index = Index;
 
   template<auto N> struct parent {
     using type = __type_pack_element<sizeof...(Ts) + N, Ts...>;;
   };
 };
+} // namespace detail
+
+template<auto N, class TSelf>
+auto parent(TSelf) -> typename TSelf::template parent<N>::type;
 
 template<class T, class... TParents, class... TArgs>
 [[nodiscard]] constexpr auto make(TArgs&&... args) -> decltype(T{static_cast<T&&>(args)...}) {
@@ -192,11 +201,11 @@ template<class T, class Fn>
     if constexpr (std::is_class_v<type>) {
       return [&]<template<class...> class TList, class... TArgs>(TList<TArgs...>) -> decltype(auto) {
         return [&]<size_t... Ns>(std::index_sequence<Ns...>) -> decltype(auto) {
-          return T{invoke<TArgs>(wrapper<Fn, Ts..., T>{fn})...};
+          return T{detail::invoke<TArgs>(detail::wrapper<Fn, Ns, Ts..., T>{fn})...};
         }(std::make_index_sequence<sizeof...(TArgs)>{});
       }(type_traits::ctor_args_v<type>);
     } else {
-      return invoke<T>(wrapper<Fn, Ts..., T>{fn});
+      return detail::invoke<T>(detail::wrapper<Fn, 0u, Ts..., T>{fn});
     }
   }(typename Fn::value_type{});
 }
