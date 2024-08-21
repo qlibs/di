@@ -173,6 +173,7 @@ template<class T> [[nodiscard]] constexpr auto invoke(auto&& self) -> T {
   }
 }
 
+// TODO wrapper get by previous inheritance
 template<class T, std::size_t Index, class... Ts>
 struct wrapper : T {
   constexpr wrapper(T t) : T{t} {}
@@ -189,11 +190,10 @@ struct wrapper : T {
 template<auto N, class TSelf>
 auto parent(TSelf) -> typename TSelf::template parent<N>::type;
 
-template<class T, class... TParents, class... TArgs>
-[[nodiscard]] constexpr auto make(TArgs&&... args) -> decltype(T{static_cast<T&&>(args)...}) {
-  return T{static_cast<T&&>(args)...};
+template<class T, class... TArgs>
+[[nodiscard]] constexpr auto make(TArgs&&... args) -> decltype(T{static_cast<TArgs&&>(args)...}) {
+  return T{static_cast<TArgs&&>(args)...};
 }
-
 template<class T, class Fn>
 [[nodiscard]] constexpr auto make(Fn fn) -> decltype(auto) requires (invocable<Fn> and not requires { T{fn}; }) {
   return [&]<class... Ts>(type_traits::type_list<Ts...>) {
@@ -209,8 +209,28 @@ template<class T, class Fn>
     }
   }(typename Fn::value_type{});
 }
-// make_shared
+
+template<class T, class... TArgs>
+[[nodiscard]] constexpr auto make_shared(TArgs&&... args) -> decltype(T{static_cast<TArgs&&>(args)...}) {
+  return std::make_shared<T>(static_cast<TArgs&&>(args)...);
+}
+template<class T, class Fn>
+[[nodiscard]] constexpr auto make_shared(Fn fn) -> decltype(auto) requires (invocable<Fn> and not requires { T{fn}; }) {
+  return [&]<class... Ts>(type_traits::type_list<Ts...>) {
+    using type = type_traits::naked_t<T>;
+    if constexpr (std::is_class_v<type>) {
+      return [&]<template<class...> class TList, class... TArgs>(TList<TArgs...>) -> decltype(auto) {
+        return [&]<size_t... Ns>(std::index_sequence<Ns...>) -> decltype(auto) {
+          return std::make_shared<T>(detail::invoke<TArgs>(detail::wrapper<Fn, Ns, Ts..., T>{fn})...);
+        }(std::make_index_sequence<sizeof...(TArgs)>{});
+      }(type_traits::ctor_args_v<type>);
+    } else {
+      return std::make_shared<T>(detail::invoke<T>(detail::wrapper<Fn, 0u, Ts..., T>{fn}));
+    }
+  }(typename Fn::value_type{});
+}
 // make_unique
+// invoke - using function-traits
 } // namespace di
 
 #ifndef NTEST
