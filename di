@@ -163,7 +163,7 @@ template<> struct override<0> {};
 
 namespace detail {
 template<class T> T failed();
-template<class T> [[nodiscard]] constexpr auto invoke(auto&& self) -> T {
+template<class T> [[nodiscard]] constexpr auto invoke(auto&& self) -> decltype(auto) {
   if constexpr (requires { self.template operator()<T>(self, override<10u>{}); }) {
     return self.template operator()<T>(self, override<10u>{});
   } else if constexpr (requires { self.template operator()<T>(self); }) {
