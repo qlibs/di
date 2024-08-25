@@ -57,32 +57,128 @@
 
 ### Overview
 
+> API (https://godbolt.org/z/vPnMj9aYb)
+
+```cpp
+struct c0 { };
+struct c1 { c1(int) { } };
+```
+
+```cpp
+auto _1 = di::make<int>();
+auto _2 = di::make<int>(42);
+auto c0_ = di::make<c0>();
+auto c1_ = di::make<c1>(42);
+```
+
 ---
 
 ### Examples
 
 > DIY - Dependency Injection Yourself
 
+```cpp
+struct interface {
+  virtual int foo() = 0;
+  virtual ~interface() = default;
+};
+
+struct implementation : interface {
+  implementation(std::shared_ptr<int> i) :i{i} {}
+  int foo() override final { return *i; }
+  std::shared_ptr<int> i{};
+};
+
+
+struct foo {
+  baz b;
+  int i1;
+  int i2;
+  std::unique_ptr<short> up{};
+  std::shared_ptr<int> i;
+};
+
+struct xx {
+  int i1;
+  int i2;
+};
+
+struct c0 { };
+struct c1 { c1(int) { } };
+struct c2 { xx x; };
+struct c3 { c3(c2, c1, std::shared_ptr<interface> i, c0&, float) { } };
+```
+
+```cpp
+template<class _, class T = std::remove_cvref_t<_>>
+  requires requires { reflect::member_name<T::index::value, std::remove_cvref_t<typename T::parent_type::value_type>>(); }
+inline constexpr auto name = reflect::member_name<T::index::value, std::remove_cvref_t<typename T::parent_type::value_type>>();
+
+template<class T>
+inline constexpr auto parent = &typeid(typename std::remove_cvref_t<T>::parent_type::value_type);
+
+constexpr auto logging =
+  [root = false]<class T, class TIndex, class TParent>(di::provider<T, TIndex, TParent>&& t) mutable -> decltype(auto) {
+    constexpr auto log_type_name = [] {
+      for (auto i = 0u; i < di::provider<T, TIndex, TParent>::size(); ++i) {
+        std::clog << ' ';
+      }
+      if constexpr (di::is_smart_ptr<T>) {
+        std::clog << reflect::type_name<T>() << '<' << reflect::type_name<typename T::element_type>() << '>';
+      } else {
+        std::clog << reflect::type_name<T>();
+      }
+    };
+
+    if constexpr (constexpr auto is_root = di::provider<T, TIndex, TParent>::size() == 1u; is_root) {
+      if (not std::exchange(root, true)) {
+        std::clog << reflect::type_name<typename std::remove_cvref_t<decltype(t)>::parent_type::value_type>() << '\n';
+      }
+    }
+
+    if constexpr (not di::is_smart_ptr<T> and requires { std::clog << std::declval<T>(); }) {
+      const auto value = t(t);
+      log_type_name();
+      std::clog << ':' << value << '\n';
+      return value;
+    } else {
+      log_type_name();
+      std::clog << '\n';
+      return t(t);
+    }
+  };
+```
+
+```cpp
+auto _ = di::make<c3>(di::overload{
+  /// custom bindings
+  [](di::trait<std::is_integral> auto&& t) requires (name<decltype(t)> == "i1") { return 1; },
+  [](di::trait<std::is_integral> auto&& t) requires (parent<decltype(t)> == &typeid(c1)) { return 2; },
+  [](di::trait<std::is_integral> auto&& t) { return 3; },
+
+  [](di::is<float> auto&& t) { return 4.f; },
+
+  [](di::is<interface> auto&& t) { return di::make<implementation>(t); },
+
+  /// generic bindings
+  [](di::trait<std::is_reference> auto&& t) -> decltype(auto) {
+    using type = typename std::remove_cvref_t<decltype(t)>::value_type;
+    static auto singleton{di::make<std::remove_cvref_t<type>>(t)};
+    return (singleton);
+  },
+  [](auto&& t) -> decltype(auto) { return di::make(t); },
+
+  /// policies
+  [](di::trait<std::is_pointer> auto&& t) -> decltype(auto) {
+    static_assert(not sizeof(t), "raw pointers are not allowed!");
+  },
+
+  /// misc
+  logging,
+});
+```
+
 ---
-
-### FAQ
-
-- How to integrate with CMake/CPM?
-
-    ```
-    CPMAddPackage(
-      Name di
-      GITHUB_REPOSITORY qlibs/di
-      GIT_TAG v1.0.0
-    )
-    add_library(di INTERFACE)
-    target_include_directories(mp SYSTEM INTERFACE ${mp_SOURCE_DIR})
-    add_library(qlibs::di ALIAS di)
-    ```
-
-    ```
-    target_link_libraries(${PROJECT_NAME} qlibs::di)
-    ```
 
 - Acknowledgments
 
@@ -101,189 +197,245 @@
 #include <memory>
 
 namespace di::inline v1_0_0 {
-namespace type_traits {
-template<class T> struct naked { using type = T; };
-template<class T> requires (not std::is_same_v<std::remove_cvref_t<std::remove_pointer_t<T>>, T>)
-struct naked<T> { using type = typename naked<std::remove_cvref_t<std::remove_pointer_t<T>>>::type; };
-template<class T> requires requires(T t) { typename T::element_type; *t; t.get(); }
-struct naked<T> { using type = typename naked<typename T::element_type>::type; };
-template<class T> using naked_t = typename naked<T>::type;
 namespace detail {
+template<class...> struct type_list{};
 template<class T> struct provider { using value_type = T; };
-template<class, size_t> struct arg { friend constexpr auto get(arg); };
+template<class, std::size_t> struct arg { friend constexpr auto get(arg); };
 template<class T, class R> struct bind { friend constexpr auto get(T) { return provider<R>{}; } };
 template<class T, class R> concept copy_or_move = std::is_same_v<T, std::remove_cvref_t<R>>;
-template<class T, size_t N> struct any final {
+template<class T, std::size_t N> struct any final {
   template<class R> requires (not copy_or_move<T, R>) operator R() noexcept(noexcept(bind<arg<T, N>, R>{}));
   template<class R> requires (not copy_or_move<T, R>) operator R&() const noexcept(noexcept(bind<arg<T, N>, R&>{}));
   template<class R> requires (not copy_or_move<T, R>) operator const R&() const noexcept(noexcept(bind<arg<T, N>, const R&>{}));
   template<class R> requires (not copy_or_move<T, R>) operator R&&() const noexcept(noexcept(bind<arg<T, N>, R&&>{}));
 };
 } // namespace detail
-template<class...> struct type_list{};
-template<class T> struct ctor_args { using type = type_list<>; };
-template<class T> requires std::is_class_v<T>
-struct ctor_args<T> {
-  static constexpr auto size = 16u;
-  template<size_t... Ns> static constexpr auto args(std::index_sequence<Ns...>) {
-    if constexpr (requires { T{detail::any<T, Ns>{}...}; }) {
-      return type_list<typename decltype(get(detail::arg<T, Ns>{}))::value_type...>{};
+template<class T, std::size_t N = 16u> struct ctor_traits {
+  using type = detail::type_list<>;
+  [[nodiscard]] constexpr auto operator()() const -> T {
+    return {};
+  }
+};
+template<class T, std::size_t N> requires (not std::is_class_v<T> and requires(T t) { T{t}; })
+struct ctor_traits<T, N> {
+  using type = detail::type_list<T>;
+  template<class... Ts> [[nodiscard]] constexpr auto operator()(Ts&&... ts) const -> T
+    requires requires { T{std::forward<Ts>(ts)...}; } {
+    return T{std::forward<Ts>(ts)...};
+  }
+};
+template<class T, std::size_t N> requires std::is_class_v<T>
+struct ctor_traits<T, N> {
+  template<std::size_t... Ns> static constexpr auto args(std::index_sequence<Ns...>) {
+    if constexpr (requires { T{detail::any<T, Ns>{}...}; } and (requires { get(detail::arg<T, Ns>{}); } and ...)) {
+      return detail::type_list<typename decltype(get(detail::arg<T, Ns>{}))::value_type...>{};
     } else if constexpr (sizeof...(Ns)) {
       return args(std::make_index_sequence<sizeof...(Ns) - 1u>{});
     } else {
-      return type_list{};
+      return detail::type_list{};
     }
   }
-  using type = decltype(args(std::make_index_sequence<size>{}));
+  using type = decltype(args(std::make_index_sequence<N>{}));
+  template<class... Ts> [[nodiscard]] constexpr auto operator()(Ts&&... ts) const -> T
+    requires requires { T{std::forward<Ts>(ts)...}; } {
+    return T{std::forward<Ts>(ts)...};
+  }
 };
-
-template<class T> using ctor_args_t = typename ctor_args<T>::type;
-template<class T> inline constexpr ctor_args_t<T> ctor_args_v{};
-} // namespace type_traits
-
-template<class...> concept _ = true;
-template<class T, template<class...> class Trait>
-concept trait = Trait<T>::value;
-template<class T, template<class...> class R>
-concept is_a = std::is_same_v<R<typename T::element_type>, T>;
+template<class T, std::size_t N>
+struct ctor_traits<std::shared_ptr<T>, N> {
+  using type = detail::type_list<T>;
+  [[nodiscard]] constexpr auto operator()(auto&& t) const -> std::shared_ptr<T>
+    requires requires { std::make_shared<std::remove_cvref_t<decltype(t)>>(std::forward<decltype(t)>(t)); } {
+    return std::make_shared<std::remove_cvref_t<decltype(t)>>(std::forward<decltype(t)>(t));
+  }
+};
+template<class T, std::size_t N>
+struct ctor_traits<std::unique_ptr<T>, N> {
+  using type = detail::type_list<T>;
+  [[nodiscard]] constexpr auto operator()(auto&& t) const -> std::shared_ptr<T>
+    requires requires { std::make_unique<std::remove_cvref_t<decltype(t)>>(std::forward<decltype(t)>(t)); } {
+    return std::make_unique<std::remove_cvref_t<decltype(t)>>(std::forward<decltype(t)>(t));
+  }
+};
 namespace detail {
 struct invocable_base { void operator()(); };
 template<class T> struct invocable_impl : T, invocable_base {};
+template<class, class T> struct value_type { using type = T; };
+template<class T, class R> requires requires { typename T::value_type; typename T::parent_type; typename T::index; }
+struct value_type<T, R> { using type = typename T::value_type; };
+template<class T>
+using value_type_t = typename value_type<std::remove_cvref_t<std::remove_pointer_t<T>>, T>::type;
 } // namespace detail
-template<class T> concept invocable = std::is_class_v<T> and not requires { &detail::invocable_impl<T>::operator(); };
+template<class T> concept invocable =
+  std::is_class_v<std::remove_cvref_t<T>> and
+  not requires { &detail::invocable_impl<std::remove_cvref_t<T>>::operator(); };
+template<class T, class U> concept is = std::is_same_v<detail::value_type_t<T>, U>;
+template<class T, template<class...> class R>
+concept is_a = std::is_same_v<R<typename detail::value_type_t<T>::element_type>, detail::value_type_t<T>>;
+template<class T> concept is_smart_ptr =
+  requires(detail::value_type_t<T> t) { t.get(); typename detail::value_type_t<T>::element_type; };
+template<class T, template<class...> class Trait>
+concept trait = Trait<detail::value_type_t<T>>::value;
 
-template<class... Ts> struct overload : Ts... {
-  using value_type = type_traits::type_list<>;
-  using Ts::operator()...;
-};
+template<class... Ts> struct overload : Ts... { using Ts::operator()...; };
 template<class... Ts> overload(Ts...) -> overload<Ts...>;
 
-template<std::size_t Priority = 1u> struct override : override<Priority - 1u> {};
-template<> struct override<0> {};
+template<class R, class...> auto error(auto&&...) -> R;
+template<class T, class Index, class TParent>
+struct provider : TParent {
+  using type = provider;
+  using value_type = T;
+  using parent_type = TParent;
+  using index = Index;
 
-namespace detail {
-template<class T> T failed();
-template<class T> [[nodiscard]] constexpr auto invoke(auto&& self) -> decltype(auto) {
-  if constexpr (requires { self.template operator()<T>(self, override<10u>{}); }) {
-    return self.template operator()<T>(self, override<10u>{});
-  } else if constexpr (requires { self.template operator()<T>(self); }) {
-    return self.template operator()<T>(self);
+  static constexpr auto size() -> std::size_t {
+    if constexpr (requires { parent_type::size(); }) {
+      return 1u + parent_type::size();
+    } else {
+      return 0u;
+    }
+  }
+};
+
+template<class R, class... Ts>
+[[nodiscard]] constexpr auto make(Ts&&... ts)
+  requires requires { R{std::forward<Ts>(ts)...}; } {
+  return ctor_traits<R>{}(std::forward<Ts>(ts)...);
+}
+template<class R, class T>
+[[nodiscard]] constexpr auto make(T&& t_) -> decltype(auto)
+  requires (invocable<T> and not requires { R{std::forward<T>(t_)}; }) {
+  auto&& t = [&] -> decltype(auto) {
+    if constexpr (not requires { typename std::remove_cvref_t<T>::parent_type; }) {
+      return provider<R, std::integral_constant<std::size_t, 0u>, std::remove_cvref_t<T>>{std::forward<T>(t_)};
+    } else {
+      return std::forward<T>(t_);
+    }
+  }();
+  const auto make = [&]<template<class...> class TList, class... Ts>(TList<Ts...>) -> decltype(auto) {
+    return [&]<std::size_t... Ns>(std::index_sequence<Ns...>) -> decltype(auto) {
+      return ctor_traits<R>{}(
+        t(provider<Ts, std::integral_constant<std::size_t, Ns>, std::remove_cvref_t<decltype(t)>>{std::forward<decltype(t)>(t)})...
+      );
+    }(std::make_index_sequence<sizeof...(Ts)>{});
+  };
+  if constexpr (requires { typename std::remove_cvref_t<decltype(t)>::parent_type::value_type; }) {
+    if constexpr (std::is_same_v<R, typename std::remove_cvref_t<decltype(t)>::parent_type::value_type>) {
+      return error<R>(t);
+    } else {
+      return make(typename ctor_traits<R>::type{});
+    }
   } else {
-    return failed<T>();
+    return make(typename ctor_traits<R>::type{});
   }
 }
-
-// TODO wrapper get by previous inheritance
-template<class T, std::size_t Index, class... Ts>
-struct wrapper : T {
-  constexpr wrapper(T t) : T{t} {}
-  using value_type = type_traits::type_list<Ts...>;
-
-  static constexpr auto index = Index;
-
-  template<auto N> struct parent {
-    using type = __type_pack_element<sizeof...(Ts) + N, Ts...>;;
-  };
-};
-} // namespace detail
-
-template<auto N, class TSelf>
-auto parent(TSelf) -> typename TSelf::template parent<N>::type;
-
-template<class T, class... TArgs>
-[[nodiscard]] constexpr auto make(TArgs&&... args) -> decltype(T{static_cast<TArgs&&>(args)...}) {
-  return T{static_cast<TArgs&&>(args)...};
+template<class T>
+[[nodiscard]] constexpr auto make(T&& t) -> decltype(di::make<typename std::remove_cvref_t<decltype(t)>::value_type>(t)) {
+  return di::make<typename std::remove_cvref_t<decltype(t)>::value_type>(t);
 }
-template<class T, class Fn>
-[[nodiscard]] constexpr auto make(Fn fn) -> decltype(auto) requires (invocable<Fn> and not requires { T{fn}; }) {
-  return [&]<class... Ts>(type_traits::type_list<Ts...>) {
-    using type = type_traits::naked_t<T>;
-    if constexpr (std::is_class_v<type>) {
-      return [&]<template<class...> class TList, class... TArgs>(TList<TArgs...>) -> decltype(auto) {
-        return [&]<size_t... Ns>(std::index_sequence<Ns...>) -> decltype(auto) {
-          return T{detail::invoke<TArgs>(detail::wrapper<Fn, Ns, Ts..., T>{fn})...};
-        }(std::make_index_sequence<sizeof...(TArgs)>{});
-      }(type_traits::ctor_args_v<type>);
-    } else {
-      return detail::invoke<T>(detail::wrapper<Fn, 0u, Ts..., T>{fn});
-    }
-  }(typename Fn::value_type{});
-}
-
-template<class T, class... TArgs>
-[[nodiscard]] constexpr auto make_shared(TArgs&&... args) -> decltype(T{static_cast<TArgs&&>(args)...}) {
-  return std::make_shared<T>(static_cast<TArgs&&>(args)...);
-}
-template<class T, class Fn>
-[[nodiscard]] constexpr auto make_shared(Fn fn) -> decltype(auto) requires (invocable<Fn> and not requires { T{fn}; }) {
-  return [&]<class... Ts>(type_traits::type_list<Ts...>) {
-    using type = type_traits::naked_t<T>;
-    if constexpr (std::is_class_v<type>) {
-      return [&]<template<class...> class TList, class... TArgs>(TList<TArgs...>) -> decltype(auto) {
-        return [&]<size_t... Ns>(std::index_sequence<Ns...>) -> decltype(auto) {
-          return std::make_shared<T>(detail::invoke<TArgs>(detail::wrapper<Fn, Ns, Ts..., T>{fn})...);
-        }(std::make_index_sequence<sizeof...(TArgs)>{});
-      }(type_traits::ctor_args_v<type>);
-    } else {
-      return std::make_shared<T>(detail::invoke<T>(detail::wrapper<Fn, 0u, Ts..., T>{fn}));
-    }
-  }(typename Fn::value_type{});
-}
-// make_unique
-// invoke - using function-traits
 } // namespace di
 
 #ifndef NTEST
 static_assert(([] {
-  // di::type_traits
+  // di::ctor_traits
   {
-    // ctor_args_t
-    {
-      using di::type_traits::type_list;
+    using di::detail::type_list;
 
-      static_assert(std::is_same_v<type_list<>, di::type_traits::ctor_args_t<void>>);
-      static_assert(std::is_same_v<type_list<>, di::type_traits::ctor_args_t<int>>);
-      static_assert(std::is_same_v<type_list<>, di::type_traits::ctor_args_t<const int&>>);
-      static_assert(std::is_same_v<type_list<>, di::type_traits::ctor_args_t<void*>>);
+    static_assert(std::is_same_v<type_list<>, di::ctor_traits<void>::type>);
+    static_assert(std::is_same_v<type_list<int>, di::ctor_traits<int>::type>);
 
-      struct empty{};
-      static_assert(std::is_same_v<type_list<>, di::type_traits::ctor_args_t<empty>>);
+    struct empty{};
+    static_assert(std::is_same_v<type_list<>, di::ctor_traits<empty>::type>);
 
-      struct trivial{ constexpr trivial() = default; };
-      static_assert(std::is_same_v<type_list<>, di::type_traits::ctor_args_t<trivial>>);
+    struct trivial{ constexpr trivial() = default; };
+    static_assert(std::is_same_v<type_list<>, di::ctor_traits<trivial>::type>);
 
-      struct a1 { int i; };
-      static_assert(std::is_same_v<type_list<int>, di::type_traits::ctor_args_t<a1>>);
+    struct a1 { int i; };
+    static_assert(std::is_same_v<type_list<int>, di::ctor_traits<a1>::type>);
 
-      struct a2 { const int* i; float f{}; };
-      static_assert(std::is_same_v<type_list<const int*, float>, di::type_traits::ctor_args_t<a2>>);
+    struct a2 { const int* i; float f{}; };
+    static_assert(std::is_same_v<type_list<const int*, float>, di::ctor_traits<a2>::type>);
 
-      struct c0{ constexpr explicit(true) c0(empty) { }; };
-      static_assert(std::is_same_v<type_list<empty>, di::type_traits::ctor_args_t<c0>>);
+    struct c0{ constexpr explicit(true) c0(empty) { }; };
+    static_assert(std::is_same_v<type_list<empty>, di::ctor_traits<c0>::type>);
 
-      struct c1 { c1(int) { } };
-      static_assert(std::is_same_v<type_list<int>, di::type_traits::ctor_args_t<c1>>);
+    struct c1 { c1(int) { } };
+    static_assert(std::is_same_v<type_list<int>, di::ctor_traits<c1>::type>);
 
-      struct c2 { c2(const int&) { } };
-      static_assert(std::is_same_v<type_list<const int&>, di::type_traits::ctor_args_t<c2>>);
+    struct c2 { c2(const int&) { } };
+    static_assert(std::is_same_v<type_list<const int&>, di::ctor_traits<c2>::type>);
 
-      struct c3 { c3(const int&, empty*) { } };
-      static_assert(std::is_same_v<type_list<const int&, empty*>, di::type_traits::ctor_args_t<c3>>);
+    struct c3 { c3(const int&, empty*) { } };
+    static_assert(std::is_same_v<type_list<const int&, empty*>, di::ctor_traits<c3>::type>);
 
-      struct c4 { c4(const int&, const empty*, float) { } };
-      static_assert(std::is_same_v<type_list<const int&, const empty*, float>, di::type_traits::ctor_args_t<c4>>);
+    struct c4 { c4(const int&, const empty*, float) { } };
+    static_assert(std::is_same_v<type_list<const int&, const empty*, float>, di::ctor_traits<c4>::type>);
 
-      struct c5 { constexpr c5(int, int, int, int) noexcept { } };
-      static_assert(std::is_same_v<type_list<int, int, int, int>, di::type_traits::ctor_args_t<c5>>);
+    struct c5 { constexpr c5(int, int, int, int) noexcept { } };
+    static_assert(std::is_same_v<type_list<int, int, int, int>, di::ctor_traits<c5>::type>);
 
-      struct c6 { constexpr c6(int, int, int, int, int,
-                               int, int, int, int, int,
-                               int, int, int, int, int) throw() { } };
-      static_assert(std::is_same_v<
-        type_list<int, int, int, int, int,
-                  int, int, int, int, int,
-                  int, int, int, int, int>, di::type_traits::ctor_args_t<c6>>);
-    }
+    struct c6 { constexpr c6(int, int, int, int, int,
+                             int, int, int, int, int,
+                             int, int, int, int, int) throw() { } };
+    static_assert(std::is_same_v<
+      type_list<int, int, int, int, int,
+                int, int, int, int, int,
+                int, int, int, int, int>, di::ctor_traits<c6>::type>);
+  }
+
+  // di::invocable
+  {
+    static_assert(di::invocable<decltype([]{})>);
+    static_assert(di::invocable<decltype([](int){})>);
+    static_assert(di::invocable<decltype([](const int&){})>);
+    static_assert(di::invocable<decltype([]<class... Ts>(Ts...){})>);
+    static_assert(di::invocable<decltype([]<auto... >(){})>);
+    static_assert(di::invocable<decltype([](auto...){})>);
+    static_assert(di::invocable<decltype([](...){})>);
+  }
+
+  // di::is
+  {
+    static_assert(not di::is<int, const int>);
+    static_assert(not di::is<int, const int*>);
+    static_assert(not di::is<int, const int*>);
+    static_assert(di::is<void, void>);
+    static_assert(di::is<int, int>);
+    static_assert(di::is<const void*, const void*>);
+    static_assert(di::is<int&&, int&&>);
+  }
+
+  // di::is_a
+  {
+    static_assert(not di::is_a<int, std::shared_ptr>);
+    static_assert(not di::is_a<std::shared_ptr<void>&, std::unique_ptr>);
+    static_assert(not di::is_a<const std::shared_ptr<int>&, std::unique_ptr>);
+    static_assert(not di::is_a<std::shared_ptr<void>, std::unique_ptr>);
+    static_assert(di::is_a<std::shared_ptr<void>, std::shared_ptr>);
+    static_assert(di::is_a<std::shared_ptr<int>, std::shared_ptr>);
+    static_assert(di::is_a<std::unique_ptr<int>, std::unique_ptr>);
+  }
+
+  // di::is_smart_ptr
+  {
+    static_assert(not di::is_smart_ptr<void>);
+    static_assert(not di::is_smart_ptr<void*>);
+    static_assert(not di::is_smart_ptr<int>);
+    static_assert(not di::is_smart_ptr<const int&>);
+    static_assert(not di::is_smart_ptr<const std::shared_ptr<int>&>);
+    static_assert(di::is_smart_ptr<std::shared_ptr<void>>);
+    static_assert(di::is_smart_ptr<std::shared_ptr<int>>);
+    static_assert(di::is_smart_ptr<std::unique_ptr<int>>);
+  }
+
+  // di::trait
+  {
+    static_assert(not di::trait<int, std::is_const>);
+    static_assert(di::trait<const int, std::is_const>);
+    static_assert(not di::trait<const int&, std::is_pointer>);
+    static_assert(di::trait<int*, std::is_pointer>);
+    static_assert(not di::trait<int, std::is_class>);
+    static_assert(di::trait<std::shared_ptr<void>, std::is_class>);
   }
 
   // di::overload
@@ -294,6 +446,40 @@ static_assert(([] {
     static_assert(42 == di::overload{[](int i) { return i; }}(42));
     static_assert(42 == di::overload{[](int i) { return i; }, [](auto a) { return a; }}(42));
     static_assert('_' == di::overload{[](int i) { return i; }, [](auto a) { return a; }}('_'));
+  }
+
+  // di::make
+  {
+    static_assert(int(42) == di::make<int>(42));
+    static_assert(char('x') == di::make<char>('x'));
+
+    struct empty {};
+    static_assert(sizeof(di::make<empty>()) == sizeof(empty));
+
+    struct c1 { constexpr c1(int i) : i{i} { } int i{}; };
+    static_assert(42 == di::make<c1>(42).i);
+    static_assert(42 == di::make<c1>(di::overload{
+      [](...) { return 42; }
+    }).i);
+    static_assert([](auto... ts) { return requires { di::make<c1>(ts...); }; }(int{}));
+    static_assert(not [](auto... ts) { return requires { di::make<c1>(ts...); }; }());
+    static_assert(not [](auto... ts) { return requires { di::make<c1>(ts...); }; }(float{}));
+    static_assert(not [](auto... ts) { return requires { di::make<c1>(ts...); }; }(int{}, int{}));
+
+    struct c2 { constexpr c2(int i, bool b) : i{i}, b{b} { } int i; bool b; };
+    static_assert(1 == di::make<c2>(1, true).i);
+    static_assert(true == di::make<c2>(1, true).b);
+    constexpr auto cfg1 = di::overload{
+      [](auto&& t) requires std::is_same_v<typename std::remove_cvref_t<decltype(t)>::value_type, int> { return 42; },
+      [](auto&& t) requires std::is_same_v<typename std::remove_cvref_t<decltype(t)>::value_type, bool> { return true; },
+    };
+    static_assert(42 == di::make<c2>(cfg1).i);
+    static_assert(true == di::make<c2>(cfg1).b);
+
+    static_assert([](auto... ts) { return requires { di::make<c2>(ts...); }; }(int{}, bool{}));
+    static_assert(not [](auto... ts) { return requires { di::make<c2>(ts...); }; }(bool{}, int{}));
+    static_assert(not [](auto... ts) { return requires { di::make<c2>(ts...); }; }(bool{}, char{}));
+    static_assert(not [](auto... ts) { return requires { di::make<c2>(ts...); }; }(bool{}, bool{}, bool{}));
   }
 }(), true));
 #endif // NTEST
