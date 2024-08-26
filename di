@@ -30,7 +30,7 @@
 [![MIT Licence](http://img.shields.io/badge/license-MIT-blue.svg)](https://opensource.org/license/mit)
 [![Version](https://img.shields.io/github/v/release/qlibs/di)](https://github.com/qlibs/di/releases)
 [![Build](https://img.shields.io/badge/build-green.svg)](https://godbolt.org/z/fKEcojqze)
-[![Try it online](https://img.shields.io/badge/try%20it-online-blue.svg)](https://godbolt.org/z/Gs4E3TsEY)
+[![Try it online](https://img.shields.io/badge/try%20it-online-blue.svg)](https://godbolt.org/z/KGacjE67x)
 
   > https://en.wikipedia.org/wiki/Dependency_injection
 
@@ -55,7 +55,7 @@
 
 ### Overview
 
-> API (https://godbolt.org/z/Gs4E3TsEY)
+> API (https://godbolt.org/z/KGacjE67x)
 
 ```cpp
 struct aggregate1 {
