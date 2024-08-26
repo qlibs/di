@@ -77,125 +77,125 @@
 
 ```cpp
 namespace di::inline v1_0_0 {
-/**
- * @code
- * struct c1 { c1(int) { } };
- * static_assert(std::is_same_v<type_list<int>, di::ctor_traits<c1>::type>);
- * #endcode
- */
-template<class T, std::size_t N = 16u> struct ctor_traits {
-  using type = /*unspecified*/;
-  template<class... Ts>
-  [[nodiscard]] constexpr auto operator()(Ts&&...) const -> T;
-};
+  /**
+   * @code
+   * struct c1 { c1(int) { } };
+   * static_assert(std::is_same_v<type_list<int>, di::ctor_traits<c1>::type>);
+   * #endcode
+   */
+  template<class T, std::size_t N = 16u> struct ctor_traits {
+    using type = /*unspecified*/;
+    template<class... Ts>
+    [[nodiscard]] constexpr auto operator()(Ts&&...) const -> T;
+  };
 
-/**
- * static_assert(di::invocable<decltype([]{})>);
- * static_assert(di::invocable<decltype([](int){})>);
- * static_assert(di::invocable<decltype([](const int&){})>);
- * static_assert(di::invocable<decltype([]<class... Ts>(Ts...){})>);
- * static_assert(di::invocable<decltype([]<auto... >(){})>);
- * static_assert(di::invocable<decltype([](auto...){})>);
- * static_assert(di::invocable<decltype([](...){})>);
- */
-template<class T> concept invocable;
+  /**
+   * static_assert(di::invocable<decltype([]{})>);
+   * static_assert(di::invocable<decltype([](int){})>);
+   * static_assert(di::invocable<decltype([](const int&){})>);
+   * static_assert(di::invocable<decltype([]<class... Ts>(Ts...){})>);
+   * static_assert(di::invocable<decltype([]<auto... >(){})>);
+   * static_assert(di::invocable<decltype([](auto...){})>);
+   * static_assert(di::invocable<decltype([](...){})>);
+   */
+  template<class T> concept invocable;
 
-/**
- * @code
- * static_assert(not di::is<int, const int>);
- * static_assert(not di::is<int, const int*>);
- * static_assert(not di::is<int, const int*>);
- * static_assert(di::is<void, void>);
- * static_assert(di::is<int, int>);
- * static_assert(di::is<const void*, const void*>);
- * static_assert(di::is<int&&, int&&>);
- * @endcode
- */
-template<class TLhs, class TRhs> concept is;
+  /**
+   * @code
+   * static_assert(not di::is<int, const int>);
+   * static_assert(not di::is<int, const int*>);
+   * static_assert(not di::is<int, const int*>);
+   * static_assert(di::is<void, void>);
+   * static_assert(di::is<int, int>);
+   * static_assert(di::is<const void*, const void*>);
+   * static_assert(di::is<int&&, int&&>);
+   * @endcode
+   */
+  template<class TLhs, class TRhs> concept is;
 
-/**
- * @code
- * static_assert(not di::is_a<int, std::shared_ptr>);
- * static_assert(not di::is_a<std::shared_ptr<void>&, std::unique_ptr>);
- * static_assert(not di::is_a<const std::shared_ptr<int>&, std::unique_ptr>);
- * static_assert(not di::is_a<std::shared_ptr<void>, std::unique_ptr>);
- * static_assert(di::is_a<std::shared_ptr<void>, std::shared_ptr>);
- * static_assert(di::is_a<std::shared_ptr<int>, std::shared_ptr>);
- * static_assert(di::is_a<std::unique_ptr<int>, std::unique_ptr>);
- */
-template<class T, template<class...> class R> concept is_a;
+  /**
+   * @code
+   * static_assert(not di::is_a<int, std::shared_ptr>);
+   * static_assert(not di::is_a<std::shared_ptr<void>&, std::unique_ptr>);
+   * static_assert(not di::is_a<const std::shared_ptr<int>&, std::unique_ptr>);
+   * static_assert(not di::is_a<std::shared_ptr<void>, std::unique_ptr>);
+   * static_assert(di::is_a<std::shared_ptr<void>, std::shared_ptr>);
+   * static_assert(di::is_a<std::shared_ptr<int>, std::shared_ptr>);
+   * static_assert(di::is_a<std::unique_ptr<int>, std::unique_ptr>);
+   */
+  template<class T, template<class...> class R> concept is_a;
 
-/**
- * @code
- * static_assert(not di::is_smart_ptr<void>);
- * static_assert(not di::is_smart_ptr<void*>);
- * static_assert(not di::is_smart_ptr<int>);
- * static_assert(not di::is_smart_ptr<const int&>);
- * static_assert(not di::is_smart_ptr<const std::shared_ptr<int>&>);
- * static_assert(di::is_smart_ptr<std::shared_ptr<void>>);
- * static_assert(di::is_smart_ptr<std::shared_ptr<int>>);
- * static_assert(di::is_smart_ptr<std::unique_ptr<int>>);
- */
-template<class T> concept is_smart_ptr;
+  /**
+   * @code
+   * static_assert(not di::is_smart_ptr<void>);
+   * static_assert(not di::is_smart_ptr<void*>);
+   * static_assert(not di::is_smart_ptr<int>);
+   * static_assert(not di::is_smart_ptr<const int&>);
+   * static_assert(not di::is_smart_ptr<const std::shared_ptr<int>&>);
+   * static_assert(di::is_smart_ptr<std::shared_ptr<void>>);
+   * static_assert(di::is_smart_ptr<std::shared_ptr<int>>);
+   * static_assert(di::is_smart_ptr<std::unique_ptr<int>>);
+   */
+  template<class T> concept is_smart_ptr;
 
-/**
- * @code
- * static_assert(not di::trait<int, std::is_const>);
- * static_assert(di::trait<const int, std::is_const>);
- * static_assert(not di::trait<const int&, std::is_pointer>);
- * static_assert(di::trait<int*, std::is_pointer>);
- * static_assert(not di::trait<int, std::is_class>);
- * static_assert(di::trait<std::shared_ptr<void>, std::is_class>);
- */
-template<class T, template<class...> class Trait> concept trait;
+  /**
+   * @code
+   * static_assert(not di::trait<int, std::is_const>);
+   * static_assert(di::trait<const int, std::is_const>);
+   * static_assert(not di::trait<const int&, std::is_pointer>);
+   * static_assert(di::trait<int*, std::is_pointer>);
+   * static_assert(not di::trait<int, std::is_class>);
+   * static_assert(di::trait<std::shared_ptr<void>, std::is_class>);
+   */
+  template<class T, template<class...> class Trait> concept trait;
 
-/**
- * @code
- * static_assert(42 == di::overload{
- *   [](int i) { return i; },
- *   [](auto a) { return a; }
- * }(42));
- * @endcode
- */
-template<class... Ts> struct overload;
+  /**
+   * @code
+   * static_assert(42 == di::overload{
+   *   [](int i) { return i; },
+   *   [](auto a) { return a; }
+   * }(42));
+   * @endcode
+   */
+  template<class... Ts> struct overload;
 
-/**
- * Injection context
- */
-template<class T, class Index, class TParent>
-struct provider {
-  using value_type = T;
-  using parent_type = TParent;
-  static constexpr auto index() -> std::size_t;
-  static constexpr auto parent() -> parent_type;
-  static constexpr auto type() -> value_type;
-  static constexpr auto size() -> std::size_t;
-  #if defined(REFLECT)
-  static constexpr auto name() -> std::string_view;
-  #endif
-};
+  /**
+   * Injection context
+   */
+  template<class T, class Index, class TParent>
+  struct provider {
+    using value_type = T;
+    using parent_type = TParent;
+    static constexpr auto index() -> std::size_t;
+    static constexpr auto parent() -> parent_type;
+    static constexpr auto type() -> value_type;
+    static constexpr auto size() -> std::size_t;
+    #if defined(REFLECT)
+    static constexpr auto name() -> std::string_view;
+    #endif
+  };
 
-/**
- * @code
- * static_assert(42 == di::make<int>(42));
- * @endcode
- */
-template<class R, class... Ts>
-[[nodiscard]] constexpr auto make(Ts&&... ts)
-  requires requires { R{std::forward<Ts>(ts)...}; };
+  /**
+   * @code
+   * static_assert(42 == di::make<int>(42));
+   * @endcode
+   */
+  template<class R, class... Ts>
+  [[nodiscard]] constexpr auto make(Ts&&... ts)
+    requires requires { R{std::forward<Ts>(ts)...}; };
 
-/**
- * @code
- * static_assert(42 == di::make<int>(
- *   di::overload{
- *     [](di::is<int> auto) { return 42; }
- *   }
- * ));
- * @endcode
- */
-template<class R, class T>
-[[nodiscard]] constexpr auto make(T&& t) requires invocable<T>;
-}
+  /**
+   * @code
+   * static_assert(42 == di::make<int>(
+   *   di::overload{
+   *     [](di::is<int> auto) { return 42; }
+   *   }
+   * ));
+   * @endcode
+   */
+  template<class R, class T>
+  [[nodiscard]] constexpr auto make(T&& t) requires invocable<T>;
+} // namespace di
 ```
 
 ---
