@@ -34,20 +34,22 @@
 
   > https://en.wikipedia.org/wiki/Dependency_injection
 
-### Use cases
+### Use case
 
-- Fully customizable generic factories
-
+- [Generic factories](https://en.wikipedia.org/wiki/Factory_method_pattern)
 
 ### Features
 
 - Single header (https://raw.githubusercontent.com/qlibs/di/main/di - for integration see [FAQ](#faq))
 - Minimal [API](#api)
-  - Unified way with different polymorphism styles (`concepts, variant, type_erasure, CRTP, virtual`) as well as aggregates, classes, etc.
-  - Constructor order and types changes agnostic (Simplifies integration with third party libraries)
-  - Testing (Different bindigns for `production` and `testing`)
-  - Policies, Logging
+  - Unified way for different polymorphism styles (`concepts, variant, type_erasure, CRTP, inheritance`)
+  - Constructor deducation for classes and aggregates
+  - Constructor order and types changes agnostic (simplifies integration with third party libraries)
+  - Testing (different bindigns for `production` and `testing`)
+  - Policies (API's with checked requirements)
+  - Logging/Profiling/Serialization/... (iteration over all created objects)
 - Verifies itself upon include (can be disabled with `-DNTEST` - see [FAQ](#faq))
+
 
 ### Requirements
 
@@ -57,122 +59,158 @@
 
 ### Overview
 
-> API (https://godbolt.org/z/v597WY8cz)
+> API ()
 
-```cpp
-struct c0 { };
-struct c1 { c1(int) { } };
-```
-
-```cpp
-auto _1 = di::make<int>();
-auto _2 = di::make<int>(42);
-auto c0_ = di::make<c0>();
-auto c1_ = di::make<c1>(42);
-```
 
 ---
 
 ### Examples
 
-> DIY - Dependency Injection Yourself
+> DIY - Dependency Injection Yourself (https://godbolt.org/z/v597WY8cz)
 
-```cpp
-struct interface {
-  virtual int foo() = 0;
-  virtual ~interface() = default;
-};
-
-struct implementation : interface {
-  implementation(std::shared_ptr<int> i) :i{i} {}
-  int foo() override final { return *i; }
-  std::shared_ptr<int> i{};
-};
-
-
-struct ints {
-  int i1;
-  int i2;
-};
-
-struct c0 { };
-struct c1 { c1(int) { } };
-struct c2 { ints i; };
-struct c3 { c3(c2, c1, std::shared_ptr<interface> i, c0&, float) { } };
+``cpp
 ```
 
-```cpp
-template<class _, class T = std::remove_cvref_t<_>>
-  requires requires { reflect::member_name<T::index::value, std::remove_cvref_t<typename T::parent_type::value_type>>(); }
-inline constexpr auto name = reflect::member_name<T::index::value, std::remove_cvref_t<typename T::parent_type::value_type>>();
+----
 
-template<class T>
-inline constexpr auto parent = &typeid(typename std::remove_cvref_t<T>::parent_type::value_type);
-
-constexpr auto logger =
-  [root = false]<class T, class TIndex, class TParent>(di::provider<T, TIndex, TParent>&& t) mutable -> decltype(auto) {
-    constexpr auto log_type_name = [] {
-      for (auto i = 0u; i < di::provider<T, TIndex, TParent>::size(); ++i) {
-        std::clog << ' ';
-      }
-      if constexpr (di::is_smart_ptr<T>) {
-        std::clog << reflect::type_name<T>() << '<' << reflect::type_name<typename T::element_type>() << '>';
-      } else {
-        std::clog << reflect::type_name<T>();
-      }
-    };
-
-    if constexpr (constexpr auto is_root = di::provider<T, TIndex, TParent>::size() == 1u; is_root) {
-      if (not std::exchange(root, true)) {
-        std::clog << reflect::type_name<typename std::remove_cvref_t<decltype(t)>::parent_type::value_type>() << '\n';
-      }
-    }
-
-    if constexpr (not di::is_smart_ptr<T> and requires { std::clog << std::declval<T>(); }) {
-      const auto value = t(t);
-      log_type_name();
-      std::clog << ':' << value << '\n';
-      return value;
-    } else {
-      log_type_name();
-      std::clog << '\n';
-      return t(t);
-    }
-  };
-```
+### API
 
 ```cpp
-auto _ = di::make<c3>(di::overload{
-  /// custom bindings
-  [](di::trait<std::is_integral> auto&& t) requires (name<decltype(t)> == "i1") { return 1; },
-  [](di::trait<std::is_integral> auto&& t) requires (parent<decltype(t)> == &typeid(c1)) { return 2; },
-  [](di::trait<std::is_integral> auto&& t) { return 3; },
+namespace di::inline v1_0_0 {
+/**
+ * @code
+ * struct c1 { c1(int) { } };
+ * static_assert(std::is_same_v<type_list<int>, di::ctor_traits<c1>::type>);
+ * #endcode
+ */
+template<class T, std::size_t N = 16u> struct ctor_traits {
+  using type = /*unspecified*/;
+  template<class... Ts>
+  [[nodiscard]] constexpr auto operator()(Ts&&...) const -> T;
+};
 
-  [](di::is<float> auto&& t) { return 4.f; },
+/**
+ * static_assert(di::invocable<decltype([]{})>);
+ * static_assert(di::invocable<decltype([](int){})>);
+ * static_assert(di::invocable<decltype([](const int&){})>);
+ * static_assert(di::invocable<decltype([]<class... Ts>(Ts...){})>);
+ * static_assert(di::invocable<decltype([]<auto... >(){})>);
+ * static_assert(di::invocable<decltype([](auto...){})>);
+ * static_assert(di::invocable<decltype([](...){})>);
+ */
+template<class T> concept invocable;
 
-  [](di::is<interface> auto&& t) { return di::make<implementation>(t); },
+/**
+ * @code
+ * static_assert(not di::is<int, const int>);
+ * static_assert(not di::is<int, const int*>);
+ * static_assert(not di::is<int, const int*>);
+ * static_assert(di::is<void, void>);
+ * static_assert(di::is<int, int>);
+ * static_assert(di::is<const void*, const void*>);
+ * static_assert(di::is<int&&, int&&>);
+ * @endcode
+ */
+template<class TLhs, class TRhs> concept is;
 
-  /// generic bindings
-  [](di::trait<std::is_reference> auto&& t) -> decltype(auto) {
-    using type = typename std::remove_cvref_t<decltype(t)>::value_type;
-    static auto singleton{di::make<std::remove_cvref_t<type>>(t)};
-    return (singleton);
-  },
-  [](auto&& t) -> decltype(auto) { return di::make(t); },
+/**
+ * @code
+ * static_assert(not di::is_a<int, std::shared_ptr>);
+ * static_assert(not di::is_a<std::shared_ptr<void>&, std::unique_ptr>);
+ * static_assert(not di::is_a<const std::shared_ptr<int>&, std::unique_ptr>);
+ * static_assert(not di::is_a<std::shared_ptr<void>, std::unique_ptr>);
+ * static_assert(di::is_a<std::shared_ptr<void>, std::shared_ptr>);
+ * static_assert(di::is_a<std::shared_ptr<int>, std::shared_ptr>);
+ * static_assert(di::is_a<std::unique_ptr<int>, std::unique_ptr>);
+ */
+template<class T, template<class...> class R> concept is_a;
 
-  /// policies
-  [](di::trait<std::is_pointer> auto&& t) -> decltype(auto) {
-    static_assert(not sizeof(t), "raw pointers are not allowed!");
-  },
+/**
+ * @code
+ * static_assert(not di::is_smart_ptr<void>);
+ * static_assert(not di::is_smart_ptr<void*>);
+ * static_assert(not di::is_smart_ptr<int>);
+ * static_assert(not di::is_smart_ptr<const int&>);
+ * static_assert(not di::is_smart_ptr<const std::shared_ptr<int>&>);
+ * static_assert(di::is_smart_ptr<std::shared_ptr<void>>);
+ * static_assert(di::is_smart_ptr<std::shared_ptr<int>>);
+ * static_assert(di::is_smart_ptr<std::unique_ptr<int>>);
+ */
+template<class T> concept is_smart_ptr;
 
-  /// misc
-  logger,
-});
+/**
+ * @code
+ * static_assert(not di::trait<int, std::is_const>);
+ * static_assert(di::trait<const int, std::is_const>);
+ * static_assert(not di::trait<const int&, std::is_pointer>);
+ * static_assert(di::trait<int*, std::is_pointer>);
+ * static_assert(not di::trait<int, std::is_class>);
+ * static_assert(di::trait<std::shared_ptr<void>, std::is_class>);
+ */
+template<class T, template<class...> class Trait> concept trait;
+
+/**
+ * @code
+ * static_assert(0u == di::overload{[](auto... ts) { return sizeof...(ts); }}());
+ * static_assert(1u == di::overload{[](auto... ts) { return sizeof...(ts); }}(1));
+ * static_assert(2u == di::overload{[](auto... ts) { return sizeof...(ts); }}(1, 2));
+ * static_assert(42 == di::overload{[](int i) { return i; }}(42));
+ * static_assert(42 == di::overload{[](int i) { return i; }, [](auto a) { return a; }}(42));
+ * static_assert('_' == di::overload{[](int i) { return i; }, [](auto a) { return a; }}('_'));
+ * @endcode
+ */
+template<class... Ts> struct overload;
+
+template<class T, class Index, class TParent>
+struct provider {
+  using value_type = T;
+  using parent_type = TParent;
+  static constexpr auto index();
+  static constexpr auto parent() -> parent_type;
+  static constexpr auto type() -> value_type;
+  static constexpr auto size() -> std::size_t;
+  #if defined(REFLECT)
+  static constexpr auto name();
+  #endif
+};
+
+template<class R, class... Ts>
+[[nodiscard]] constexpr auto make(Ts&&... ts)
+  requires requires { R{std::forward<Ts>(ts)...}; };
+
+template<class R, class T>
+[[nodiscard]] constexpr auto make(T&& t);
+  requires (invocable<T> and not requires { R{std::forward<T>(t)}; }) {
+} // namespace di
 ```
 
 ---
 
+### FAQ
+
+- How to integrate with [CMake.FetchContent](https://cmake.org/cmake/help/latest/module/FetchContent.html)?
+
+    ```
+    include(FetchContent)
+
+    FetchContent_Declare(
+      qlibs.di
+      GIT_REPOSITORY https://github.com/qlibs/di
+      GIT_TAG v1.0.0
+    )
+
+    FetchContent_MakeAvailable(qlibs.di)
+    ```
+
+    ```
+    target_link_libraries(${PROJECT_NAME} PUBLIC qlibs.di);
+    ```
+
 - Acknowledgments
+  - https://www.youtube.com/watch?v=yVogS4NbL6U
+  - https://www.youtube.com/watch?v=QZkVpZlbM4U
+  - https://www.youtube.com/watch?v=8HmjM3G8jhQ
+  - https://www.youtube.com/watch?v=50VIYIHlUJE
 
 <!--
 #endif
@@ -250,7 +288,7 @@ namespace detail {
 struct invocable_base { void operator()(); };
 template<class T> struct invocable_impl : T, invocable_base {};
 template<class, class T> struct value_type { using type = T; };
-template<class T, class R> requires requires { typename T::value_type; typename T::parent_type; typename T::index; }
+template<class T, class R> requires requires(T t) { typename T::value_type; typename T::parent_type; t.index(); t.size(); }
 struct value_type<T, R> { using type = typename T::value_type; };
 template<class T>
 using value_type_t = typename value_type<std::remove_cvref_t<std::remove_pointer_t<T>>, T>::type;
@@ -258,7 +296,7 @@ using value_type_t = typename value_type<std::remove_cvref_t<std::remove_pointer
 template<class T> concept invocable =
   std::is_class_v<std::remove_cvref_t<T>> and
   not requires { &detail::invocable_impl<std::remove_cvref_t<T>>::operator(); };
-template<class T, class U> concept is = std::is_same_v<detail::value_type_t<T>, U>;
+template<class TLhs, class TRhs> concept is = std::is_same_v<detail::value_type_t<TLhs>, TRhs>;
 template<class T, template<class...> class R>
 concept is_a = std::is_same_v<R<typename detail::value_type_t<T>::element_type>, detail::value_type_t<T>>;
 template<class T> concept is_smart_ptr =
@@ -272,11 +310,12 @@ template<class... Ts> overload(Ts...) -> overload<Ts...>;
 template<class R, class...> auto error(auto&&...) -> R;
 template<class T, class Index, class TParent>
 struct provider : TParent {
-  using type = provider;
   using value_type = T;
   using parent_type = TParent;
-  using index = Index;
 
+  static constexpr auto index() { return Index::value; }
+  static constexpr auto parent() -> parent_type;
+  static constexpr auto type() -> value_type;
   static constexpr auto size() -> std::size_t {
     if constexpr (requires { parent_type::size(); }) {
       return 1u + parent_type::size();
@@ -284,6 +323,13 @@ struct provider : TParent {
       return 0u;
     }
   }
+
+  #if defined(REFLECT_ENUM_MIN) and defined(REFLECT_ENUM_MAX)
+  template<class TParent_ = parent_type>
+  static constexpr auto name() -> decltype(reflect::member_name<Index::value, typename TParent_::value_type>()) {
+    return reflect::member_name<Index::value, typename TParent_::value_type>();
+  }
+  #endif
 };
 
 template<class R, class... Ts>
