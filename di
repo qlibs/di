@@ -30,7 +30,7 @@
 [![MIT Licence](http://img.shields.io/badge/license-MIT-blue.svg)](https://opensource.org/license/mit)
 [![Version](https://img.shields.io/github/v/release/qlibs/di)](https://github.com/qlibs/di/releases)
 [![Build](https://img.shields.io/badge/build-green.svg)](
-[![Try it online](https://img.shields.io/badge/try%20it-online-blue.svg)](https://godbolt.org/z/E4s3EqWrM)
+[![Try it online](https://img.shields.io/badge/try%20it-online-blue.svg)](https://godbolt.org/z/Pd3GrdfM8)
 
   > https://en.wikipedia.org/wiki/Dependency_injection
 
@@ -46,7 +46,7 @@
   - Constructor deduction for classes and aggregates
   - Constructor order and types changes agnostic (simplifies integration with `third party libraries`)
   - Testing (different bindigns for `production` and `testing`)
-  - Policies (API's with `checked` requirements)
+  - Policies (APIs with `checked` requirements)
   - Logging/Profiling/Serialization/... (iteration over all `created` objects)
 - Verifies itself upon include (can be disabled with `-DNTEST` - see [FAQ](#faq))
 
@@ -222,10 +222,7 @@ template<class R, class T>
     ```
 
 - Acknowledgments
-  - https://www.youtube.com/watch?v=yVogS4NbL6U
-  - https://www.youtube.com/watch?v=QZkVpZlbM4U
-  - https://www.youtube.com/watch?v=8HmjM3G8jhQ
-  - https://www.youtube.com/watch?v=50VIYIHlUJE
+  - https://www.youtube.com/watch?v=yVogS4NbL6U, https://www.youtube.com/watch?v=QZkVpZlbM4U
 
 <!--
 #endif
