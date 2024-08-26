@@ -273,7 +273,7 @@ constexpr auto generic = di::overload{
 // errors
 {
   (void)di::make<aggregate1>(di::overload{
-    [](di::is<int> auto) { return 42; }, // COMMENT - di::v1_0_0::error<int, ...>
+    [](di::is<int> auto) { return 42; }, // COMMENT - di::error<int, ...>
     [](auto t) { return di::make(t); },
   });
 }
