@@ -287,7 +287,7 @@ constexpr auto generic = di::overload{
       static_assert(not sizeof(t), "raw pointers are not allowed!");
     },
     [](auto t) -> decltype(auto) { return di::make(t); }, // compund types
-  });
+  }); // error
 }
 
 // errors
