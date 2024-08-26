@@ -29,7 +29,7 @@
 
 [![MIT Licence](http://img.shields.io/badge/license-MIT-blue.svg)](https://opensource.org/license/mit)
 [![Version](https://img.shields.io/github/v/release/qlibs/di)](https://github.com/qlibs/di/releases)
-[![Build](https://img.shields.io/badge/build-green.svg)](
+[![Build](https://img.shields.io/badge/build-green.svg)](https://godbolt.org/z/fKEcojqze)
 [![Try it online](https://img.shields.io/badge/try%20it-online-blue.svg)](https://godbolt.org/z/Pd3GrdfM8)
 
   > https://en.wikipedia.org/wiki/Dependency_injection
@@ -53,7 +53,7 @@
 
 ### Requirements
 
-- C++20 ([clang++10+, g++10+](https://en.cppreference.com/w/cpp/compiler_support))
+- C++20 ([clang++13+, g++11+](https://en.cppreference.com/w/cpp/compiler_support))
 
 ---
 
