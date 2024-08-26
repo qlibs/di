@@ -109,7 +109,7 @@ inline constexpr auto name = reflect::member_name<T::index::value, std::remove_c
 template<class T>
 inline constexpr auto parent = &typeid(typename std::remove_cvref_t<T>::parent_type::value_type);
 
-constexpr auto logging =
+constexpr auto logger =
   [root = false]<class T, class TIndex, class TParent>(di::provider<T, TIndex, TParent>&& t) mutable -> decltype(auto) {
     constexpr auto log_type_name = [] {
       for (auto i = 0u; i < di::provider<T, TIndex, TParent>::size(); ++i) {
@@ -166,7 +166,7 @@ auto _ = di::make<c3>(di::overload{
   },
 
   /// misc
-  logging,
+  logger,
 });
 ```
 
@@ -178,10 +178,7 @@ auto _ = di::make<c3>(di::overload{
 #endif
 
 #pragma once
-
-#ifdef __GNUC__
 #pragma GCC system_header
-#endif
 
 #include <cstdint>
 #include <utility>
