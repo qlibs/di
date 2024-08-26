@@ -57,7 +57,7 @@
 
 ### Overview
 
-> API (https://godbolt.org/z/vPnMj9aYb)
+> API (https://godbolt.org/z/v597WY8cz)
 
 ```cpp
 struct c0 { };
@@ -90,22 +90,14 @@ struct implementation : interface {
 };
 
 
-struct foo {
-  baz b;
-  int i1;
-  int i2;
-  std::unique_ptr<short> up{};
-  std::shared_ptr<int> i;
-};
-
-struct xx {
+struct ints {
   int i1;
   int i2;
 };
 
 struct c0 { };
 struct c1 { c1(int) { } };
-struct c2 { xx x; };
+struct c2 { ints i; };
 struct c3 { c3(c2, c1, std::shared_ptr<interface> i, c0&, float) { } };
 ```
 
