@@ -305,7 +305,7 @@ constexpr auto generic = di::overload{
 
 ### Examples
 
-> DIY - Dependency Injection Yourself (https://godbolt.org/z/faWjrao5h)
+> DIY - Dependency Injection Yourself (https://godbolt.org/z/W1EPdonnn)
 
 ```cpp
 namespace di {
