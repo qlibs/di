@@ -350,6 +350,50 @@ int main() {
 }
 ```
 
+> `is_structural` (https://godbolt.org/z/8qaK5aKTq)
+
+```cpp
+template<class T, auto cfg =
+  [](auto t) {
+    using type = std::remove_cvref_t<decltype(t.type())>;
+    if constexpr (requires { type{}; }) {
+      return type{};
+    } else {
+      return di::make(t);
+    }
+  }
+> concept is_structural = requires {
+  []<T = di::make<T>(cfg)>{}();
+};
+
+static_assert(is_structural<int>);
+static_assert(not is_structural<std::optional<int>>);
+
+struct s { s() = delete; };
+static_assert(not is_structural<s>);
+
+struct y { int i; };
+static_assert(is_structural<y>);
+
+struct n { private: int i; };
+static_assert(not is_structural<n>);
+
+struct c1 { constexpr c1(int) {} };
+static_assert(is_structural<c1>);
+
+struct c2 { constexpr c2(int, double) {} };
+static_assert(is_structural<c2>);
+
+struct c3 { constexpr c3(std::optional<int>) {} };
+static_assert(not is_structural<c3>);
+
+struct c4 { constexpr c4(auto...) {} };
+static_assert(is_structural<c4>);
+
+struct c5 { private: constexpr c5(auto...) {} };
+static_assert(not is_structural<c5>);
+```
+
 ----
 
 ### API
