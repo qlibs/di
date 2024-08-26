@@ -151,33 +151,48 @@ template<class T, template<class...> class Trait> concept trait;
 
 /**
  * @code
- * static_assert(0u == di::overload{[](auto... ts) { return sizeof...(ts); }}());
- * static_assert(1u == di::overload{[](auto... ts) { return sizeof...(ts); }}(1));
- * static_assert(2u == di::overload{[](auto... ts) { return sizeof...(ts); }}(1, 2));
- * static_assert(42 == di::overload{[](int i) { return i; }}(42));
- * static_assert(42 == di::overload{[](int i) { return i; }, [](auto a) { return a; }}(42));
- * static_assert('_' == di::overload{[](int i) { return i; }, [](auto a) { return a; }}('_'));
+ * static_assert(42 == di::overload{
+ *   [](int i) { return i; },
+ *   [](auto a) { return a; }
+ * }(42));
  * @endcode
  */
 template<class... Ts> struct overload;
 
+/**
+ * Injection context
+ */
 template<class T, class Index, class TParent>
 struct provider {
   using value_type = T;
   using parent_type = TParent;
-  static constexpr auto index();
+  static constexpr auto index() -> std::size_t;
   static constexpr auto parent() -> parent_type;
   static constexpr auto type() -> value_type;
   static constexpr auto size() -> std::size_t;
   #if defined(REFLECT)
-  static constexpr auto name();
+  static constexpr auto name() -> std::string_view;
   #endif
 };
 
+/**
+ * @code
+ * static_assert(42 == di::make<int>(42));
+ * @endcode
+ */
 template<class R, class... Ts>
 [[nodiscard]] constexpr auto make(Ts&&... ts)
   requires requires { R{std::forward<Ts>(ts)...}; };
 
+/**
+ * @code
+ * static_assert(42 == di::make<int>(
+ *   di::overload{
+ *     [](di::is<int> auto) { return 42; }
+ *   }
+ * ));
+ * @endcode
+ */
 template<class R, class T>
 [[nodiscard]] constexpr auto make(T&& t);
   requires (invocable<T> and not requires { R{std::forward<T>(t)}; }) {
@@ -313,7 +328,7 @@ struct provider : TParent {
   using value_type = T;
   using parent_type = TParent;
 
-  static constexpr auto index() { return Index::value; }
+  static constexpr auto index() -> std::size_t { return Index::value; }
   static constexpr auto parent() -> parent_type;
   static constexpr auto type() -> value_type;
   static constexpr auto size() -> std::size_t {
