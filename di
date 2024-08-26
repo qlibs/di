@@ -355,7 +355,7 @@ int main() {
 ### API
 
 ```cpp
-namespace di::inline v1_0_0 {
+namespace di::inline v1_0_1 {
 /**
  * @code
  * struct c1 { c1(int) { } };
@@ -494,7 +494,7 @@ template<class R, class T>
     FetchContent_Declare(
       qlibs.di
       GIT_REPOSITORY https://github.com/qlibs/di
-      GIT_TAG v1.0.0
+      GIT_TAG v1.0.1
     )
 
     FetchContent_MakeAvailable(qlibs.di)
@@ -518,7 +518,7 @@ template<class R, class T>
 #include <type_traits>
 #include <memory>
 
-namespace di::inline v1_0_0 {
+namespace di::inline v1_0_1 {
 namespace detail {
 template<class...> struct type_list{};
 template<class T> struct provider { using value_type = T; };
