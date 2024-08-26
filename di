@@ -43,11 +43,11 @@
 - Single header (https://raw.githubusercontent.com/qlibs/di/main/di - for integration see [FAQ](#faq))
 - Minimal [API](#api)
   - Unified way for different polymorphism styles (`concepts, variant, type_erasure, CRTP, inheritance`)
-  - Constructor deducation for classes and aggregates
-  - Constructor order and types changes agnostic (simplifies integration with third party libraries)
+  - Constructor deduction for classes and aggregates
+  - Constructor order and types changes agnostic (simplifies integration with `third party libraries`)
   - Testing (different bindigns for `production` and `testing`)
-  - Policies (API's with checked requirements)
-  - Logging/Profiling/Serialization/... (iteration over all created objects)
+  - Policies (API's with `checked` requirements)
+  - Logging/Profiling/Serialization/... (iteration over all `created` objects)
 - Verifies itself upon include (can be disabled with `-DNTEST` - see [FAQ](#faq))
 
 
@@ -68,7 +68,7 @@
 
 > DIY - Dependency Injection Yourself (https://godbolt.org/z/v597WY8cz)
 
-``cpp
+```cpp
 ```
 
 ----
