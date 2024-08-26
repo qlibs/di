@@ -486,7 +486,7 @@ template<class R, class T>
     ```
 
 - Acknowledgments
-  - https://www.youtube.com/watch?v=yVogS4NbL6U, https://www.youtube.com/watch?v=QZkVpZlbM4U
+  > https://www.youtube.com/watch?v=yVogS4NbL6U, https://www.youtube.com/watch?v=QZkVpZlbM4U
 
 <!--
 #endif
@@ -640,8 +640,8 @@ template<class R, class T>
     return make(typename ctor_traits<R>::type{});
   }
 }
-template<class T>
-[[nodiscard]] constexpr auto make(T&& t) -> decltype(di::make<typename std::remove_cvref_t<decltype(t)>::value_type>(t)) {
+[[nodiscard]] constexpr auto make(invocable auto&& t)
+  -> decltype(di::make<typename std::remove_cvref_t<decltype(t)>::value_type>(t)) {
   return di::make<typename std::remove_cvref_t<decltype(t)>::value_type>(t);
 }
 } // namespace di
