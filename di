@@ -30,7 +30,7 @@
 [![MIT Licence](http://img.shields.io/badge/license-MIT-blue.svg)](https://opensource.org/license/mit)
 [![Version](https://img.shields.io/github/v/release/qlibs/di)](https://github.com/qlibs/di/releases)
 [![Build](https://img.shields.io/badge/build-green.svg)](https://godbolt.org/z/fKEcojqze)
-[![Try it online](https://img.shields.io/badge/try%20it-online-blue.svg)](https://godbolt.org/z/oso5jGv7z)
+[![Try it online](https://img.shields.io/badge/try%20it-online-blue.svg)](https://godbolt.org/z/Gs4E3TsEY)
 
   > https://en.wikipedia.org/wiki/Dependency_injection
 
@@ -55,7 +55,7 @@
 
 ### Overview
 
-> API (https://godbolt.org/z/oso5jGv7z)
+> API (https://godbolt.org/z/Gs4E3TsEY)
 
 ```cpp
 struct aggregate1 {
@@ -88,6 +88,26 @@ struct aggregate {
 
   assert(a.i1 == 42);
   assert(a.i2 == 42);
+}
+
+// di::make (assisted)
+{
+  struct assisted {
+    constexpr assisted(int i, aggregate a, float f) : i{i}, a{a}, f{f} { }
+    int i{};
+    aggregate a{};
+    float f{};
+  };
+
+  auto def = [](auto t) { return decltype(t.type()){}; };
+  auto a = di::make<assisted>(999, di::make<aggregate>(def), 4.2f);
+
+  assert(a.i == 999);
+  assert(a.a.a1.i1 == 0);
+  assert(a.a.a1.i2 == 0);
+  assert(a.a.a2.i1 == 0);
+  assert(a.a.a2.i2 == 0);
+  assert(a.f == 4.2f);
 }
 
 // di::make (with names)
@@ -158,9 +178,9 @@ constexpr auto generic = di::overload{
     constexpr virtual ~interface() noexcept = default;
     constexpr virtual auto fn() const -> int = 0;
   };
-  struct implementation final : interface {
+  struct implementation : interface {
     constexpr implementation(int i) : i{i} { }
-    constexpr auto fn() const -> int override { return i; }
+    constexpr auto fn() const -> int override final { return i; }
     int i{};
   };
 
@@ -226,14 +246,15 @@ constexpr auto generic = di::overload{
       for (auto i = 0u; i < di::provider<T, TIndex, TParent>::size(); ++i) {
         std::clog << ' ';
       }
-      if constexpr (di::is_smart_ptr<T>) {
+      if constexpr (di::is_smart_ptr<std::remove_cvref_t<T>>) {
         std::clog << reflect::type_name<T>() << '<'
-                  << reflect::type_name<typename T::element_type>() << '>';
+                  << reflect::type_name<
+                      typename std::remove_cvref_t<T>::element_type>() << '>';
       } else {
         std::clog << reflect::type_name<T>();
       }
-      if constexpr (not di::is_smart_ptr<T> and
-          requires { std::clog << std::declval<T>(); }) {
+      if constexpr (not di::is_smart_ptr<std::remove_cvref_t<T>> and
+        requires { std::clog << std::declval<T>(); }) {
         std::clog << ':' << t(t);
       }
       std::clog << '\n';
@@ -263,8 +284,7 @@ constexpr auto generic = di::overload{
 
   [[maybe_unused]] auto p = di::make<policy>(di::overload{
     []([[maybe_unused]] di::trait<std::is_pointer> auto t) {
-      // static_assert(not sizeof(t), "raw pointers are not allowed!"); // UNCOMMENT
-      return nullptr;
+      static_assert(not sizeof(t), "raw pointers are not allowed!");
     },
     [](auto t) -> decltype(auto) { return di::make(t); }, // compund types
   });
@@ -273,20 +293,19 @@ constexpr auto generic = di::overload{
 // errors
 {
   (void)di::make<aggregate1>(di::overload{
-    [](di::is<int> auto) { return 42; }, // COMMENT - di::error<int, ...>
+    // [](di::is<int> auto) { return 42; },
     [](auto t) { return di::make(t); },
-  });
+  }); // di::error<int, ...>
 }
 
 // and more (see API)...
 ```
 
-
 ---
 
 ### Examples
 
-> DIY - Dependency Injection Yourself (https://godbolt.org/z/s8en6E87v)
+> DIY - Dependency Injection Yourself (https://godbolt.org/z/faWjrao5h)
 
 ```cpp
 namespace di {
@@ -616,7 +635,7 @@ template<class R, class... Ts>
 template<class R, class T>
 [[nodiscard]] constexpr auto make(T&& t_) -> decltype(auto)
   requires (invocable<T> and not requires { R{std::forward<T>(t_)}; }) {
-  auto&& t = [&] -> decltype(auto) {
+  auto&& t = [&]() -> decltype(auto) {
     if constexpr (not requires { typename std::remove_cvref_t<T>::parent_type; }) {
       return provider<R, std::integral_constant<std::size_t, 0u>, std::remove_cvref_t<T>>{std::forward<T>(t_)};
     } else {
@@ -640,7 +659,7 @@ template<class R, class T>
     return make(typename ctor_traits<R>::type{});
   }
 }
-[[nodiscard]] constexpr auto make(invocable auto&& t)
+[[nodiscard]] constexpr auto make(auto&& t)
   -> decltype(di::make<typename std::remove_cvref_t<decltype(t)>::value_type>(t)) {
   return di::make<typename std::remove_cvref_t<decltype(t)>::value_type>(t);
 }
