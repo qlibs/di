@@ -30,7 +30,7 @@
 [![MIT Licence](http://img.shields.io/badge/license-MIT-blue.svg)](https://opensource.org/license/mit)
 [![Version](https://img.shields.io/github/v/release/qlibs/di)](https://github.com/qlibs/di/releases)
 [![Build](https://img.shields.io/badge/build-green.svg)](https://godbolt.org/z/fKEcojqze)
-[![Try it online](https://img.shields.io/badge/try%20it-online-blue.svg)](https://godbolt.org/z/KGacjE67x)
+[![Try it online](https://img.shields.io/badge/try%20it-online-blue.svg)](https://godbolt.org/z/zPxM9KjM8)
 
   > https://en.wikipedia.org/wiki/Dependency_injection
 
@@ -55,7 +55,7 @@
 
 ### Overview
 
-> API (https://godbolt.org/z/KGacjE67x)
+> API (https://godbolt.org/z/zPxM9KjM8)
 
 ```cpp
 struct aggregate1 {
@@ -63,9 +63,9 @@ struct aggregate1 {
   int i2{};
   constexpr auto operator==(const aggregate1&) const -> bool = default;
 };
-struct aggregate2 { // reversed order
-  int i1{};
-  int i2{};
+struct aggregate2 {
+  int i2{}; // instead of i1
+  int i1{}; // instead of i2
   constexpr auto operator==(const aggregate2&) const -> bool = default;
 };
 
