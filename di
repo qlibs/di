@@ -305,13 +305,13 @@ constexpr auto generic = di::overload{
 
 ### Examples
 
-> DIY - Dependency Injection Yourself (https://godbolt.org/z/W1EPdonnn)
+> DIY - Dependency Injection Yourself (https://godbolt.org/z/jfqox9foY)
 
 ```cpp
 namespace di {
-inline constexpr auto injector = [](auto... ts) {
+inline constexpr auto injector = [](auto&&... ts) {
   return di::overload{
-    ts...,
+    std::forward<decltype(ts)>(ts)...,
     [](di::trait<std::is_reference> auto t) -> decltype(auto) {
       using type = decltype(t.type());
       static auto singleton{di::make<std::remove_cvref_t<type>>(t)};
