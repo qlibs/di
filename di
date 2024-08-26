@@ -363,9 +363,9 @@ namespace di::inline v1_0_1 {
  * #endcode
  */
 template<class T, std::size_t N = 16u> struct ctor_traits {
-  using type = /*unspecified*/;
-  template<class... Ts>
-  [[nodiscard]] constexpr auto operator()(Ts&&...) const -> T;
+  template<class...> struct type_list{};
+  using type = type_list</* T constructor parameters (size = N..0)`)*/>;
+  [[nodiscard]] constexpr auto operator()(auto&&...) const -> T;
 };
 
 /**
@@ -445,12 +445,13 @@ template<class T, class Index, class TParent>
 struct provider {
   using value_type = T;
   using parent_type = TParent;
-  static constexpr auto index() -> std::size_t;
+
+  static constexpr auto index()  -> std::size_t;
   static constexpr auto parent() -> parent_type;
-  static constexpr auto type() -> value_type;
-  static constexpr auto size() -> std::size_t;
+  static constexpr auto type()   -> value_type;
+  static constexpr auto size()   -> std::size_t;
   #if defined(REFLECT)
-  static constexpr auto name() -> std::string_view;
+  static constexpr auto name()   -> std::string_view;
   #endif
 };
 
