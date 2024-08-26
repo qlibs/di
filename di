@@ -521,7 +521,9 @@ template<class R, class T>
 
 namespace di::inline v1_0_1 {
 namespace detail {
-template<class...> struct type_list{};
+template<class... Ts> struct type_list{
+  static constexpr auto size() { return sizeof...(Ts); }
+};
 template<class T> struct provider { using value_type = T; };
 template<class, std::size_t> struct arg { friend constexpr auto get(arg); };
 template<class T, class R> struct bind { friend constexpr auto get(T) { return provider<R>{}; } };
@@ -538,6 +540,7 @@ template<class T, std::size_t N = 16u> struct ctor_traits {
   [[nodiscard]] constexpr auto operator()() const -> T {
     return {};
   }
+  static constexpr auto size() { return type::size(); }
 };
 template<class T, std::size_t N> requires (not std::is_class_v<T> and requires(T t) { T{t}; })
 struct ctor_traits<T, N> {
@@ -546,6 +549,7 @@ struct ctor_traits<T, N> {
     requires requires { T{std::forward<Ts>(ts)...}; } {
     return T{std::forward<Ts>(ts)...};
   }
+  static constexpr auto size() { return type::size(); }
 };
 template<class T, std::size_t N> requires std::is_class_v<T>
 struct ctor_traits<T, N> {
@@ -563,6 +567,7 @@ struct ctor_traits<T, N> {
     requires requires { T{std::forward<Ts>(ts)...}; } {
     return T{std::forward<Ts>(ts)...};
   }
+  static constexpr auto size() { return type::size(); }
 };
 template<class T, std::size_t N>
 struct ctor_traits<std::shared_ptr<T>, N> {
@@ -571,6 +576,7 @@ struct ctor_traits<std::shared_ptr<T>, N> {
     requires requires { std::make_shared<std::remove_cvref_t<decltype(t)>>(std::forward<decltype(t)>(t)); } {
     return std::make_shared<std::remove_cvref_t<decltype(t)>>(std::forward<decltype(t)>(t));
   }
+  static constexpr auto size() { return type::size(); }
 };
 template<class T, std::size_t N>
 struct ctor_traits<std::unique_ptr<T>, N> {
@@ -579,6 +585,7 @@ struct ctor_traits<std::unique_ptr<T>, N> {
     requires requires { std::make_unique<std::remove_cvref_t<decltype(t)>>(std::forward<decltype(t)>(t)); } {
     return std::make_unique<std::remove_cvref_t<decltype(t)>>(std::forward<decltype(t)>(t));
   }
+  static constexpr auto size() { return type::size(); }
 };
 namespace detail {
 struct invocable_base { void operator()(); };
