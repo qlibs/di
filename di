@@ -181,7 +181,8 @@ struct provider {
  * @endcode
  */
 template<class R, class... Ts>
-[[nodiscard]] constexpr auto make(Ts&&... ts) requires requires { R{std::forward<Ts>(ts)...}; };
+[[nodiscard]] constexpr auto make(Ts&&... ts)
+  requires requires { R{std::forward<Ts>(ts)...}; };
 
 /**
  * @code
