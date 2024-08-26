@@ -320,14 +320,14 @@ inline constexpr auto injector = [](auto... ts) {
     [](auto t) { return di::make(t); },
   };
 };
-template<class T, class U = void>
+template<class T, class R = void>
 inline constexpr auto bind = [] {
-  if constexpr (std::is_void_v<U>) {
+  if constexpr (std::is_void_v<R>) {
     return [](auto to) {
       return [to](di::is<T> auto) { return to(); };
     };
   } else {
-    return [](di::is<T> auto t) { return di::make<U>(t); };
+    return [](di::is<T> auto t) { return di::make<R>(t); };
   }
 }();
 } // namespace di
