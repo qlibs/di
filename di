@@ -43,7 +43,7 @@
     - [Generic factories](https://en.wikipedia.org/wiki/Factory_method_pattern)
   - Constructor deduction for classes and aggregates
   - Constructor order and types changes agnostic (simplifies integration with `third party` libraries)
-  - Testing (different bindigns for `production` and `testing`)
+  - Testing (different bindigns for `production` and `testing`, `faking` some parameters with `assisted` injection)
   - Policies (APIs with `checked` requirements)
   - Logging/Profiling/Serialization/... (via iteration over all `created` objects)
 
