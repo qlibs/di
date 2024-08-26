@@ -62,229 +62,227 @@
 > API (https://godbolt.org/z/oso5jGv7z)
 
 ```cpp
-int main() {
-  struct aggregate1 {
-    int i1{};
-    int i2{};
-    constexpr auto operator==(const aggregate1&) const -> bool = default;
-  };
-  struct aggregate2 { // reversed order
-    int i1{};
-    int i2{};
-    constexpr auto operator==(const aggregate2&) const -> bool = default;
-  };
+struct aggregate1 {
+  int i1{};
+  int i2{};
+  constexpr auto operator==(const aggregate1&) const -> bool = default;
+};
+struct aggregate2 { // reversed order
+  int i1{};
+  int i2{};
+  constexpr auto operator==(const aggregate2&) const -> bool = default;
+};
 
-  struct aggregate {
-    aggregate1 a1{};
-    aggregate2 a2{};
-  };
+struct aggregate {
+  aggregate1 a1{};
+  aggregate2 a2{};
+};
 
-  // di::make
-  {
-    static_assert(42 == di::make<int>(42));
-    static_assert(aggregate1{1, 2} == di::make<aggregate1>(1, 2));
-  }
-
-  // di::make (generic)
-  {
-    auto a = di::make<aggregate1>(di::overload{
-      [](di::trait<std::is_integral> auto) { return 42; }
-    });
-
-    assert(a.i1 == 42);
-    assert(a.i2 == 42);
-  }
-
-  // di::make (with names)
-  {
-    auto a = di::make<aggregate1>(di::overload{
-      [](di::is<int> auto t) requires (t.name() == "i1") { return 4; },
-      [](di::is<int> auto t) requires (t.name() == "i2") { return 2; },
-    });
-
-    assert(a.i1 == 4);
-    assert(a.i2 == 2);
-  }
-
-  // di::make (with names) - reverse order
-  {
-    auto a = di::make<aggregate2>(di::overload{
-      [](di::is<int> auto t) requires (t.name() == "i1") { return 4; },
-      [](di::is<int> auto t) requires (t.name() == "i2") { return 2; },
-    });
-
-    assert(a.i1 == 4);
-    assert(a.i2 == 2);
-  }
-
-  // di::make (with names, context and compound types)
-  {
-    auto a = di::make<aggregate>(di::overload{
-      // custom bindigs
-      [](di::trait<std::is_integral> auto t)
-        requires (t.name() == "i1" and
-                  &typeid(t.parent().type()) == &typeid(aggregate1)) { return 99; },
-      [](di::trait<std::is_integral> auto) { return 42; },
-
-      // generic bindings
-      [](auto t) -> decltype(auto) { return di::make(t); }, // compund types
-    });
-
-    assert(a.a1.i1 == 99);
-    assert(a.a1.i2 == 42);
-    assert(a.a2.i1 == 42);
-    assert(a.a2.i2 == 42);
-  }
-
-  constexpr auto generic = di::overload{
-    [](auto t) -> decltype(auto) { return di::make(t); }, // compund types
-  };
-
-  // di::make (seperate overloads)
-  {
-    constexpr auto custom = di::overload {
-      [](di::trait<std::is_integral> auto t)
-        requires (t.name() == "i1" and
-                  &typeid(t.parent().type()) == &typeid(aggregate1)) { return 99; },
-      [](di::trait<std::is_integral> auto t) { return decltype(t.type()){}; },
-    };
-
-    auto a = di::make<aggregate>(di::overload{custom, generic});
-
-    assert(a.a1.i1 == 99);
-    assert(a.a1.i2 == 0);
-    assert(a.a2.i1 == 0);
-    assert(a.a2.i2 == 0);
-  }
-
-  // di::make (polymorphism, scopes)
-  {
-    struct interface {
-      constexpr virtual ~interface() noexcept = default;
-      constexpr virtual auto fn() const -> int = 0;
-    };
-    struct implementation final : interface {
-      constexpr implementation(int i) : i{i} { }
-      constexpr auto fn() const -> int override { return i; }
-      int i{};
-    };
-
-    struct example {
-      example(
-        aggregate& a,
-        const std::shared_ptr<interface>& sp
-      ) : a{a}, sp{sp} { }
-      aggregate a{};
-      std::shared_ptr<interface> sp{};
-    };
-
-    auto i = 123;
-
-    auto bindings = di::overload{
-      generic,
-
-      [](di::is<interface> auto t) { return di::make<implementation>(t); },
-      [&](di::is<int> auto) -> decltype(auto) { return i; },
-
-      // scopes
-      [](di::trait<std::is_reference> auto t) -> decltype(auto) {
-        using type = decltype(t.type());
-        static auto singleton{di::make<std::remove_cvref_t<type>>(t)};
-        return (singleton);
-      },
-    };
-
-    auto e = di::make<example>(bindings);
-
-    assert(123 == e.sp->fn());
-    assert(123 == e.a.a1.i1);
-    assert(123 == e.a.a1.i2);
-    assert(123 == e.a.a2.i1);
-    assert(123 == e.a.a2.i2);
-
-    // testing (override bindings)
-    {
-      auto testing = di::overload{
-        [](di::trait<std::is_integral> auto) { return 1000; },
-        [bindings](auto t) -> decltype(auto) { return bindings(t); },
-      };
-
-      auto e = di::make<example>(testing);
-
-      assert(1000 == e.sp->fn());
-      assert(1000 == e.a.a1.i1);
-      assert(1000 == e.a.a1.i2);
-      assert(1000 == e.a.a2.i1);
-      assert(1000 == e.a.a2.i2);
-    }
-
-    // logging
-    {
-      constexpr auto logger = [root = false]<class T, class TIndex, class TParent>(
-          di::provider<T, TIndex, TParent>&& t) mutable -> decltype(auto) {
-        if constexpr (constexpr auto is_root =
-            di::provider<T, TIndex, TParent>::size() == 1u; is_root) {
-          if (not std::exchange(root, true)) {
-            std::clog << reflect::type_name<decltype(t.parent().type())>() << '\n';
-          }
-        }
-        for (auto i = 0u; i < di::provider<T, TIndex, TParent>::size(); ++i) {
-          std::clog << ' ';
-        }
-        if constexpr (di::is_smart_ptr<T>) {
-          std::clog << reflect::type_name<T>() << '<'
-                    << reflect::type_name<typename T::element_type>() << '>';
-        } else {
-          std::clog << reflect::type_name<T>();
-        }
-        if constexpr (not di::is_smart_ptr<T> and
-            requires { std::clog << std::declval<T>(); }) {
-          std::clog << ':' << t(t);
-        }
-        std::clog << '\n';
-
-        return t(t);
-      };
-
-      (void)di::make<example>(di::overload{logger, bindings});
-      // example
-      //  aggregate
-      //   aggregate1
-      //    int:123
-      //    int:123
-      //   aggregate2
-      //    int:123
-      //    int:123
-      //  shared_ptr<interface> -> implmentation
-      //    int:123
-    }
-  }
-
-  // policies
-  {
-    struct policy {
-      constexpr policy(int*) { }
-    };
-
-    [[maybe_unused]] auto p = di::make<policy>(di::overload{
-      []([[maybe_unused]] di::trait<std::is_pointer> auto t) {
-        // static_assert(not sizeof(t), "raw pointers are not allowed!"); // UNCOMMENT
-        return nullptr;
-      },
-      [](auto t) -> decltype(auto) { return di::make(t); }, // compund types
-    });
-  }
-
-  // errors
-  {
-    (void)di::make<aggregate1>(di::overload{
-      [](di::is<int> auto) { return 42; }, // COMMENT - di::v1_0_0::error<int, ...>
-      [](auto t) { return di::make(t); },
-    });
-  }
-
-  // and more (see API)...
+// di::make
+{
+  static_assert(42 == di::make<int>(42));
+  static_assert(aggregate1{1, 2} == di::make<aggregate1>(1, 2));
 }
+
+// di::make (generic)
+{
+  auto a = di::make<aggregate1>(di::overload{
+    [](di::trait<std::is_integral> auto) { return 42; }
+  });
+
+  assert(a.i1 == 42);
+  assert(a.i2 == 42);
+}
+
+// di::make (with names)
+{
+  auto a = di::make<aggregate1>(di::overload{
+    [](di::is<int> auto t) requires (t.name() == "i1") { return 4; },
+    [](di::is<int> auto t) requires (t.name() == "i2") { return 2; },
+  });
+
+  assert(a.i1 == 4);
+  assert(a.i2 == 2);
+}
+
+// di::make (with names) - reverse order
+{
+  auto a = di::make<aggregate2>(di::overload{
+    [](di::is<int> auto t) requires (t.name() == "i1") { return 4; },
+    [](di::is<int> auto t) requires (t.name() == "i2") { return 2; },
+  });
+
+  assert(a.i1 == 4);
+  assert(a.i2 == 2);
+}
+
+// di::make (with names, context and compound types)
+{
+  auto a = di::make<aggregate>(di::overload{
+    // custom bindigs
+    [](di::trait<std::is_integral> auto t)
+      requires (t.name() == "i1" and
+                &typeid(t.parent().type()) == &typeid(aggregate1)) { return 99; },
+    [](di::trait<std::is_integral> auto) { return 42; },
+
+    // generic bindings
+    [](auto t) -> decltype(auto) { return di::make(t); }, // compund types
+  });
+
+  assert(a.a1.i1 == 99);
+  assert(a.a1.i2 == 42);
+  assert(a.a2.i1 == 42);
+  assert(a.a2.i2 == 42);
+}
+
+constexpr auto generic = di::overload{
+  [](auto t) -> decltype(auto) { return di::make(t); }, // compund types
+};
+
+// di::make (seperate overloads)
+{
+  constexpr auto custom = di::overload {
+    [](di::trait<std::is_integral> auto t)
+      requires (t.name() == "i1" and
+                &typeid(t.parent().type()) == &typeid(aggregate1)) { return 99; },
+    [](di::trait<std::is_integral> auto t) { return decltype(t.type()){}; },
+  };
+
+  auto a = di::make<aggregate>(di::overload{custom, generic});
+
+  assert(a.a1.i1 == 99);
+  assert(a.a1.i2 == 0);
+  assert(a.a2.i1 == 0);
+  assert(a.a2.i2 == 0);
+}
+
+// di::make (polymorphism, scopes)
+{
+  struct interface {
+    constexpr virtual ~interface() noexcept = default;
+    constexpr virtual auto fn() const -> int = 0;
+  };
+  struct implementation final : interface {
+    constexpr implementation(int i) : i{i} { }
+    constexpr auto fn() const -> int override { return i; }
+    int i{};
+  };
+
+  struct example {
+    example(
+      aggregate& a,
+      const std::shared_ptr<interface>& sp
+    ) : a{a}, sp{sp} { }
+    aggregate a{};
+    std::shared_ptr<interface> sp{};
+  };
+
+  auto i = 123;
+
+  auto bindings = di::overload{
+    generic,
+
+    [](di::is<interface> auto t) { return di::make<implementation>(t); },
+    [&](di::is<int> auto) -> decltype(auto) { return i; },
+
+    // scopes
+    [](di::trait<std::is_reference> auto t) -> decltype(auto) {
+      using type = decltype(t.type());
+      static auto singleton{di::make<std::remove_cvref_t<type>>(t)};
+      return (singleton);
+    },
+  };
+
+  auto e = di::make<example>(bindings);
+
+  assert(123 == e.sp->fn());
+  assert(123 == e.a.a1.i1);
+  assert(123 == e.a.a1.i2);
+  assert(123 == e.a.a2.i1);
+  assert(123 == e.a.a2.i2);
+
+  // testing (override bindings)
+  {
+    auto testing = di::overload{
+      [](di::trait<std::is_integral> auto) { return 1000; },
+      [bindings](auto t) -> decltype(auto) { return bindings(t); },
+    };
+
+    auto e = di::make<example>(testing);
+
+    assert(1000 == e.sp->fn());
+    assert(1000 == e.a.a1.i1);
+    assert(1000 == e.a.a1.i2);
+    assert(1000 == e.a.a2.i1);
+    assert(1000 == e.a.a2.i2);
+  }
+
+  // logging
+  {
+    constexpr auto logger = [root = false]<class T, class TIndex, class TParent>(
+        di::provider<T, TIndex, TParent>&& t) mutable -> decltype(auto) {
+      if constexpr (constexpr auto is_root =
+          di::provider<T, TIndex, TParent>::size() == 1u; is_root) {
+        if (not std::exchange(root, true)) {
+          std::clog << reflect::type_name<decltype(t.parent().type())>() << '\n';
+        }
+      }
+      for (auto i = 0u; i < di::provider<T, TIndex, TParent>::size(); ++i) {
+        std::clog << ' ';
+      }
+      if constexpr (di::is_smart_ptr<T>) {
+        std::clog << reflect::type_name<T>() << '<'
+                  << reflect::type_name<typename T::element_type>() << '>';
+      } else {
+        std::clog << reflect::type_name<T>();
+      }
+      if constexpr (not di::is_smart_ptr<T> and
+          requires { std::clog << std::declval<T>(); }) {
+        std::clog << ':' << t(t);
+      }
+      std::clog << '\n';
+
+      return t(t);
+    };
+
+    (void)di::make<example>(di::overload{logger, bindings});
+    // example
+    //  aggregate
+    //   aggregate1
+    //    int:123
+    //    int:123
+    //   aggregate2
+    //    int:123
+    //    int:123
+    //  shared_ptr<interface> -> implmentation
+    //    int:123
+  }
+}
+
+// policies
+{
+  struct policy {
+    constexpr policy(int*) { }
+  };
+
+  [[maybe_unused]] auto p = di::make<policy>(di::overload{
+    []([[maybe_unused]] di::trait<std::is_pointer> auto t) {
+      // static_assert(not sizeof(t), "raw pointers are not allowed!"); // UNCOMMENT
+      return nullptr;
+    },
+    [](auto t) -> decltype(auto) { return di::make(t); }, // compund types
+  });
+}
+
+// errors
+{
+  (void)di::make<aggregate1>(di::overload{
+    [](di::is<int> auto) { return 42; }, // COMMENT - di::v1_0_0::error<int, ...>
+    [](auto t) { return di::make(t); },
+  });
+}
+
+// and more (see API)...
 ```
 
 
@@ -292,9 +290,49 @@ int main() {
 
 ### Examples
 
-> DIY - Dependency Injection Yourself ()
+> DIY - Dependency Injection Yourself (https://godbolt.org/z/s8en6E87v)
 
 ```cpp
+namespace di {
+inline constexpr auto injector = [](auto... ts) {
+  return di::overload{
+    ts...,
+    [](di::trait<std::is_reference> auto t) -> decltype(auto) {
+      using type = decltype(t.type());
+      static auto singleton{di::make<std::remove_cvref_t<type>>(t)};
+      return (singleton);
+    },
+    [](auto t) { return di::make(t); },
+  };
+};
+template<class T, class U = void>
+inline constexpr auto bind = [] {
+  if constexpr (std::is_void_v<U>) {
+    return [](auto to) {
+      return [to](di::is<T> auto) { return to(); };
+    };
+  } else {
+    return [](di::is<T> auto t) { return di::make<U>(t); };
+  }
+}();
+} // namespace di
+```
+
+```cpp
+int main() {
+  auto injector = di::injector(
+    di::bind<interface, implementation>,
+    di::bind<int>([] { return 42; })
+  );
+
+  auto e = di::make<example>(injector);
+
+  assert(42 == e.sp->fn());
+  assert(42 == e.a.a1.i1);
+  assert(42 == e.a.a1.i2);
+  assert(42 == e.a.a2.i1);
+  assert(42 == e.a.a2.i2);
+}
 ```
 
 ----
