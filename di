@@ -42,7 +42,7 @@
 
 - Single header (https://raw.githubusercontent.com/qlibs/di/main/di - for integration see [FAQ](#faq))
 - Minimal [API](#api)
-  - Unified way for different polymorphism styles (`concepts, variant, type_erasure, CRTP, inheritance`)
+  - Unified way for different polymorphism styles (`inheritance, type_erasure, variant, ...`)
   - Constructor deduction for classes and aggregates
   - Constructor order and types changes agnostic (simplifies integration with `third party libraries`)
   - Testing (different bindigns for `production` and `testing`)
@@ -195,8 +195,8 @@ template<class R, class... Ts>
  */
 template<class R, class T>
 [[nodiscard]] constexpr auto make(T&& t);
-  requires (invocable<T> and not requires { R{std::forward<T>(t)}; }) {
-} // namespace di
+  requires (invocable<T> and not requires { R{std::forward<T>(t)}; });
+}
 ```
 
 ---
