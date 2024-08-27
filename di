@@ -749,7 +749,7 @@ template<class T>
         =>
           * Wiring Mess
           =>
-            * Hard to maintain + Lazy programmers (99%)
+            * Hard to maintain
             =>
               * Hacks/Workarounds (~~Single Responsibility~~)
     ```
