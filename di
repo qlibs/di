@@ -600,8 +600,8 @@ template<class T>
     template<class T, class...> auto error(auto&&...) -> T;
     template<class T> constexpr auto make(invocable auto&& t) {
       return [&]<template<class...> class TList, class... Ts>(TList<Ts...>) {
-        if constexpr (requires { T(t(provider<Ts>(t)...); }) {
-          return T(t(provider<Ts>(t)...);
+        if constexpr (requires { T{t(provider<Ts>(t)...); }; }) {
+          return T{t(provider<Ts>(t)...};
         } else {
           return error<R>(t);
         }
