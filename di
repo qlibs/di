@@ -87,8 +87,8 @@ struct aggregate  { aggregate1 a1{}; aggregate2 a2{}; };
     float f{};
   };
 
-  auto fake = [](auto t) { return decltype(t.type()){}; };
-  auto a = di::make<assisted>(999, di::make<aggregate>(fake), 4.2f);
+  auto fakeit = [](auto t) { return decltype(t.type()){}; };
+  auto a = di::make<assisted>(999, di::make<aggregate>(fakeit), 4.2f);
 
   assert(a.i == 999);
   assert(a.a.a1.i1 == 0);
