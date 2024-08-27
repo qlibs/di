@@ -35,26 +35,11 @@
   > https://en.wikipedia.org/wiki/Dependency_injection
 
   ```cpp
-  No Dependency injection                 | Dependency Injection
-  ----------------------------------------|-------------------------------------------
-  class coffee_maker {                    | class coffee_maker {
-  public:                                 | public:
-      void brew() {                       |   coffee_maker(const shared_ptr<iheater>& heater
-          heater->on();                   |              , unique_ptr<ipump> pump)
-          pump->pump();                   |         : heater(heater), pump(move(pump))
-          clog << "coffee"! << endl;      |     { }
-          heater->off();                  |
-      }                                   |     void brew() {
-                                          |         heater->on();
-  private:                                |         pump->pump();
-      shared_ptr<iheater> heater =        |         clog << "coffee!" << endl;
-          make_shared<electric_heater>(); |         heater->off();
-                                          |     }
-      unique_ptr<ipump> pump =            |
-          make_unique<heat_pump>(heater); | private:
-  };                                      |     shared_ptr<iheater> heater;
-                                          |     unique_ptr<ipump> pump;
-                                          | };
+  struct no_di {                  struct di {
+    no_di() { }                     di(int data) : data{data} { } // DI
+   private:                        private:
+    int data = 42; /*coupled*/       int data{}; /*not coupled*/
+  };                              };
   ```
 
 ### Features
@@ -583,148 +568,7 @@ template<class T>
     - DI is also all about being loosely coupled and coupling the design to DI framework limitations and/or framework syntax itself is not a good approach in the long term due to potential future restrictions. Additionally, passing DI injector to every constructor instead of required dependencies is not ideal as it's introducing coupling and make testing difficult - https://en.wikipedia.org/wiki/Service_locator_pattern.
     - DI might be handy but it's neither required nor needed for most projects. Some DI aspects, however, can be helpful and be used by most projects (such as generic factories, logging/profiling capabilities, safety restrictions via policies, etc.).
 
-  - Do I use a Dependency Injection already?
-
-  > If you are using constructors in your code then you are probably using some form of Dependency Injection too!
-
-    ```cpp
-    class Button {
-     public:
-      Button(const std::string& name, Position position); // Dependency Injection!
-    };
-    ```
-
-- Do I use Dependency Injection correctly?
-
-  > Common mistakes when using Dependency Injection are:
-
-    - **Passing a dependency to create another dependency inside your object**
-
-      It's a bad practice to pass dependencies to an object just in order
-      to create another one with those dependencies.
-      It's much cleaner to create the latter object beforehand and pass it to the former.
-
-      ```cpp
-      class Model {
-       public:
-         Model(int width, int height)
-           : board(std::make_unique<Board>(width, height)) // Bad
-         { }
-
-         explicit Model(std::unique_ptr<IBoard> board) // Better
-           : board(std::move(board))
-         { }
-
-         ...
-
-       private:
-        std::unique_ptr<IBoard> board;
-      };
-      ```
-
-    - **Carrying dependencies**
-
-      It's also important NOT to pass depenencies through layers of constructors (carrying them).
-      It's much better to always pass only dependecies which are required ONLY by the given constructor.
-
-      ```cpp
-      class Model : public Service { // Bad
-       public:
-         explicit Model(std::unique_ptr<IBoard> board) // Bad
-           : Service(std::move(board))
-         { }
-
-         void update() {
-           Service::do_something_with_board(); // Bad
-         }
-      };
-
-      class Model { // Better
-       public:
-         explicit Model(std::unique_ptr<Service> service) // Better
-           : service(std::move(service))
-         { }
-
-         void update() {
-           service->do_something_with_board(); // Better
-         }
-
-       private:
-         std::unique_ptr<Service> service;
-      };
-      ```
-
-    - **Carrying injector (Service Locator pattern)**
-
-      Service locator is consider to be an anti-pattern because its instance
-      is required to be passed as the ONLY constructor parameter into all
-      constructors. Such approach makes the code highly coupled to the Service Locator framework.
-      It's better to pass required dependencies direclty instead and use a DI framework to inject them.
-
-      ```cpp
-      class Model {
-       public:
-         explicit Model(service_locator& sl) // Bad (ask)
-           : service(sl.resolve<unique_ptr<Service>>())
-         { }
-
-         explicit Model(std::unique_ptr<Service> service) // Better (tell)
-           : service(std::move(service))
-         { }
-
-         ...
-
-       private:
-         std::unique_ptr<Service> service;
-      };
-      ```
-
-    - **Not using strong typedefs for constructor parameters**
-
-      Being explicit and declarative is usually better than being impilicit.
-      Using common types (ex. numbers) in order to define any common-like type may cause
-      missusage of the constructor interface. Using `strong typedefs` is easier to follow and
-      protects against missusage of the constructor interface.
-
-      ```cpp
-      class Board {
-       public:
-         Board(int /*width*/, int /*height*/)  // Bad; Board{2, 3} vs Board{3, 2}?
-
-         Board(width, height) // Better, explicit; Board{width{2}, height{3}};
-
-         ...
-      };
-      ```
-
-- Do I need a Dependency Injection?
-
-  > - DI provides loosely coupled code (separation of business logic and object creation)
-  > - DI provides easier to maintain code (different objects might be easily injected)
-  > - DI provides easier to test code (fakes objects might be injected)
-
-- STUPID vs SOLID - "Clean Code" Uncle Bob
-
-    <table>
-      <tr><td><b>S</b></td><td>Singleton</td></tr>
-      <tr><td><b>T</b></td><td>Tight Coupling</td></tr>
-      <tr><td><b>U</b></td><td>Untestability</td></tr>
-      <tr><td><b>P</b></td><td>Premature Optimization</td></tr>
-      <tr><td><b>I</b></td><td>Indescriptive Naming</td></tr>
-      <tr><td><b>D</b></td><td>Duplication</td></tr>
-    </table>
-
-    > vs
-
-    <table>
-      <tr><td><b>S</b></td><td><b>Single Responsibility</b></td></tr>
-      <tr><td><b>O</b></td><td>Open-close</td></tr>
-      <tr><td><b>L</b></td><td>Liskov substitution</td></tr>
-      <tr><td><b>I</b></td><td>Interface segregation</td></tr>
-      <tr><td><b>D</b></td><td><b>Dependency inversion</b></td></tr>
-    </table>
-
-- Do I need a DI Framework/Library?
+- Do I need a DI Library?
 
     > Depending on a project and its scale you may put up with or without a DI library, however, in any project a DI framework may **free you** from maintaining a following (boilerplate) code...
 
@@ -739,8 +583,6 @@ template<class T>
     ```
     Notice that **ORDER** in which above dependencies are created is **IMPORTANT** as well as that
     **ANY** change in **ANY** of the objects constructor will **REQUIRE** a change in this code!
-
-    - Manual DI - Wiring Mess (Avoid it by using DI)
 
     ```
     * Single Responsibility Principle
