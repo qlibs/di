@@ -637,6 +637,7 @@ template<class T>
   > - ["Law of Demeter: A Practical Guide to Loose Coupling"](https://www.youtube.com/watch?v=QZkVpZlbM4U) (video)
   > - ["Clean Code: A Handbook of Agile Software Craftsmanship"](https://www.amazon.com/Clean-Code-Handbook-Software-Craftsmanship/dp/0132350882) (book)
   > - ["The Pragmatic Programmer"](https://www.amazon.com/Pragmatic-Programmer-journey-mastery-Anniversary/dp/0135957052/ref=pd_sbs_d_sccl_3_1/140-7224166-5387863?pd_rd_w=muV95&content-id=amzn1.sym.156274ff-6322-443d-8bbf-ab3ed87e382f&pf_rd_p=156274ff-6322-443d-8bbf-ab3ed87e382f&pf_rd_r=ECRZDQ02XA134FQJJQDE&pd_rd_wg=ELPtc&pd_rd_r=49d9e9b3-a8b1-4532-b3b3-16711496a3d3&pd_rd_i=0135957052&psc=1) (book)
+  > - ["Design Patterns"](https://www.amazon.com/Design-Patterns-Object-Oriented-Addison-Wesley-Professional-ebook/dp/B000SEIBB8) (book)
   > - ["Test Driven Development: By Example"](https://www.amazon.com/Test-Driven-Development-Kent-Beck/dp/0321146530) (book)
 
 - Similar projects?
