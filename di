@@ -562,18 +562,18 @@ template<class T>
     The following represents the most important parts of the library design.
 
     ```cpp
-    template<class T, class R>
-    concept copy_or_move = std::is_same_v<T, std::remove_cvref_t<R>>;
+    template<class B, class T>
+    concept copy_or_move = std::is_same_v<B, std::remove_cvref_t<T>>;
 
-    template<class T, std::size_t N> struct any {
-      template<class R> requires (not copy_or_move<T, R>)
-        operator R() noexcept(noexcept(bind<arg<T, N>, R>{}));
-      template<class R> requires (not copy_or_move<T, R>)
-        operator R&() const noexcept(noexcept(bind<arg<T, N>, R&>{}));
-      template<class R> requires (not copy_or_move<T, R>)
-        operator const R&() const noexcept(noexcept(bind<arg<T, N>, const R&>{}));
-      template<class R> requires (not copy_or_move<T, R>)
-        operator R&&() const noexcept(noexcept(bind<arg<T, N>, R&&>{}));
+    template<class B, std::size_t N> struct any {
+      template<class T> requires (not copy_or_move<B, T>)
+        operator T() noexcept(noexcept(bind<arg<B, N>, T>{}));
+      template<class T> requires (not copy_or_move<B, T>)
+        operator T&() const noexcept(noexcept(bind<arg<B, N>, T&>{}));
+      template<class T> requires (not copy_or_move<B, T>)
+        operator const T&() const noexcept(noexcept(bind<arg<B, N>, const T&>{}));
+      template<class T> requires (not copy_or_move<B, T>)
+        operator T&&() const noexcept(noexcept(bind<arg<B, N>, T&&>{}));
     };
     ```
 
@@ -603,7 +603,7 @@ template<class T>
         if constexpr (requires { T{t(provider<Ts>(t)...); }; }) {
           return T{t(provider<Ts>(t)...};
         } else {
-          return error<R>(t);
+          return error<T>(t);
         }
       }(ctor_traits<T>());
     };
@@ -661,13 +661,13 @@ template<class... Ts> struct type_list {
 };
 template<class T> struct provider { using value_type = T; };
 template<class, std::size_t> struct arg { friend constexpr auto get(arg); };
-template<class T, class R> struct bind { friend constexpr auto get(T) { return provider<R>{}; } };
-template<class T, class R> concept copy_or_move = std::is_same_v<T, std::remove_cvref_t<R>>;
-template<class T, std::size_t N> struct any {
-  template<class R> requires (not copy_or_move<T, R>) operator R() noexcept(noexcept(bind<arg<T, N>, R>{}));
-  template<class R> requires (not copy_or_move<T, R>) operator R&() const noexcept(noexcept(bind<arg<T, N>, R&>{}));
-  template<class R> requires (not copy_or_move<T, R>) operator const R&() const noexcept(noexcept(bind<arg<T, N>, const R&>{}));
-  template<class R> requires (not copy_or_move<T, R>) operator R&&() const noexcept(noexcept(bind<arg<T, N>, R&&>{}));
+template<class B, class T> struct bind { friend constexpr auto get(B) { return provider<T>{}; } };
+template<class B, class T> concept copy_or_move = std::is_same_v<B, std::remove_cvref_t<T>>;
+template<class B, std::size_t N> struct any {
+  template<class T> requires (not copy_or_move<B, T>) operator T() noexcept(noexcept(bind<arg<B, N>, T>{}));
+  template<class T> requires (not copy_or_move<B, T>) operator T&() const noexcept(noexcept(bind<arg<B, N>, T&>{}));
+  template<class T> requires (not copy_or_move<B, T>) operator const T&() const noexcept(noexcept(bind<arg<B, N>, const T&>{}));
+  template<class T> requires (not copy_or_move<B, T>) operator T&&() const noexcept(noexcept(bind<arg<B, N>, T&&>{}));
 };
 } // namespace detail
 template<class T, std::size_t N = 16u> struct ctor_traits {
