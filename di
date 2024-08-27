@@ -543,14 +543,6 @@ template<class T>
     - The main goal being flexibility of changing what's being injected so that different configurations as well as testing can be achieved by design.
     - What is important though, is what and how is being injected as that influences how good (ETC - Easy To Change) the design will be - more about it here - https://www.youtube.com/watch?v=yVogS4NbL6U.
 
-    ```cpp
-    struct no_di {                  struct di {
-      no_di() { }                     di(int data) : data{data} { } // DI
-     private:                        private:
-      int data = 42; // coupled       int data{}; // not coupled
-    };                              };
-    ```
-
   > **Manual dependency injection**
     - The idea is fairly simple. We have to create loosely coupled dependencies first. That can be achieved by following https://en.wikipedia.org/wiki/Test-driven_development, https://en.wikipedia.org/wiki/SOLID, https://en.wikipedia.org/wiki/Law_of_Demeter and other practices.
     - For flexibility and scalability it's important to depend on abstractions (via templates, inheritance, type_erasure, etc.), avoid leaky abstractions, don't carry dependencies (common with CRTP), injecting singletons instead of using them directly, etc.
