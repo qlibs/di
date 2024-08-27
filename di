@@ -527,6 +527,35 @@ template<class T>
 
 ### FAQ
 
+- Dependency Injection?
+
+  > Dependency Injection (DI) - https://en.wikipedia.org/wiki/Dependency_injection - it's a powerful technique focusing on producing loosely coupled code. In a very simplistic view, it's about passing objects/types/... via constructors and/or other forms of dependencies passing instead of coupling values/types directly in-place. In other words, if dependencies are being injected in some way (templates, concepts, parameters, data, etc.) it's a form of dependency injection (Hollywood Principle - Don't call us we'll call you). The main goal being flexibility of changing what's being injected so that different configurations as well as testing can be done. What is important though, is what and how is being injected as that influences how good (ETC - Easy To Change) the design will be - more about it here - https://www.youtube.com/watch?v=yVogS4NbL6U.
+
+  ```cpp
+  struct no_di {
+    no_di() { }
+   private:
+    int data = 42; // coupled
+  };
+
+  struct di {
+    di(int data) : data{data} { } // DI
+   private:
+    int data{};
+  };
+
+  template<int Data> // DI
+  struct di {
+    di() = default;
+   private:
+    int data{Data};
+  };
+  ```
+
+  > Manual dependency injection - The idea is fairly simple. We have to create loosely coupled dependencies first. That can be achieved by following https://en.wikipedia.org/wiki/Test-driven_development, https://en.wikipedia.org/wiki/SOLID, https://en.wikipedia.org/wiki/Law_of_Demeter and other practices. For flexibility and scalability it's important to depend on abstractions (via templates, inheritance, type_erasure, etc.), avoid leaky abstractions, don't carry dependencies (common with CRTP), injecting singletons instead of using them directly, etc. Afterwards, (preferably in main - the composition root) we create all required objects (idea is to separate business logic from objects creation - no new/make_unique/make_shared/etc in the business logic). That's also the place where https://en.wikipedia.org/wiki/Factory_method_pattern is often leveraged. This approach will introduce boilerplate code and it will be constructor changes dependent (for example order of constructor parameters change or switch from inheritance to variant, etc. will require creation code update). The more dependencies to be created to more boilerplate to maintain. Otherwise, though, the design should be testable and flexible and we CAN stop here, unless, maintaining the wiring is a big issue, then we can consider automatic DI.
+
+  > Automatic dependency injection - Automatic DI makes more sense for larger projects to limit the wiring mess and the maintenance burden with additional benefits such as logging, profiling, not being constructor order changes dependent, etc.(for example inheritance to concepts change or shared_ptr to unique_ptr change will be handled automatically with DI). Nevertheless, all-in DI approach is often way too much for most projects, but generic factories not as much, as they might be handy for testing, etc. (for example assisted injection - where some dependencies are being passed directly whereas other are injected automatically such as, unimportant from testing perspective, dependencies can be injected by DI library). However, making a dependency injection library in C++ it's not an easy task and it's more complex than in other languages. One of the hardest thing about implementing DI in C++ is constructor deduction (even with reflection support - https://wg21.link/P2996 - that's not as simple due to multiple constructor overloads and templates). Additionally, in C++ polymorphism can be done many different ways such as inheritance, templates/concepts/CRTP, variant, type erasure, etc and it's important not to limit it by introducing DI and embrace it instead. It's also important to handle contextual injection (for example, where parameter type int named foo should be injected differently than named bar, or if it's parent is foobar vs barfoo, etc.) which is not trivial in C++ either. DI is also all about being loosely coupled and coupling the design to DI framework limitations and/or framework syntax itself is not a good approach in the long term due to potential future restrictions. Additionally, passing DI injector to every constructor instead of required dependencies is not ideal as it's introducing coupling and make testing difficult - https://en.wikipedia.org/wiki/Service_locator_pattern. In summary, automatic DI might be handy but it's neither required nor needed for most projects. Some DI aspects, however, can be helpful and be used by most projects (such as generic factories, logging/profiling capabilities, safety restrictions via policies, etc.).
+
 - How does it work?
 
   > `di` works by deducing constructor parameters and calling appropriate overload to handle them.
