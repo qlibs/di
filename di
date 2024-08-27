@@ -414,24 +414,14 @@ template<class T, std::size_t N = 16u> struct ctor_traits {
 
 /**
  * static_assert(di::invocable<decltype([]{})>);
- * static_assert(di::invocable<decltype([](int){})>);
- * static_assert(di::invocable<decltype([](const int&){})>);
- * static_assert(di::invocable<decltype([]<class... Ts>(Ts...){})>);
- * static_assert(di::invocable<decltype([]<auto... >(){})>);
  * static_assert(di::invocable<decltype([](auto...){})>);
- * static_assert(di::invocable<decltype([](...){})>);
  */
 template<class T> concept invocable;
 
 /**
  * @code
  * static_assert(not di::is<int, const int>);
- * static_assert(not di::is<int, const int*>);
- * static_assert(not di::is<int, const int*>);
  * static_assert(di::is<void, void>);
- * static_assert(di::is<int, int>);
- * static_assert(di::is<const void*, const void*>);
- * static_assert(di::is<int&&, int&&>);
  * @endcode
  */
 template<class TLhs, class TRhs> concept is;
@@ -439,24 +429,13 @@ template<class TLhs, class TRhs> concept is;
 /**
  * @code
  * static_assert(not di::is_a<int, std::shared_ptr>);
- * static_assert(not di::is_a<std::shared_ptr<void>&, std::unique_ptr>);
- * static_assert(not di::is_a<const std::shared_ptr<int>&, std::unique_ptr>);
- * static_assert(not di::is_a<std::shared_ptr<void>, std::unique_ptr>);
  * static_assert(di::is_a<std::shared_ptr<void>, std::shared_ptr>);
- * static_assert(di::is_a<std::shared_ptr<int>, std::shared_ptr>);
- * static_assert(di::is_a<std::unique_ptr<int>, std::unique_ptr>);
  */
 template<class T, template<class...> class R> concept is_a;
 
 /**
  * @code
  * static_assert(not di::is_smart_ptr<void>);
- * static_assert(not di::is_smart_ptr<void*>);
- * static_assert(not di::is_smart_ptr<int>);
- * static_assert(not di::is_smart_ptr<const int&>);
- * static_assert(not di::is_smart_ptr<const std::shared_ptr<int>&>);
- * static_assert(di::is_smart_ptr<std::shared_ptr<void>>);
- * static_assert(di::is_smart_ptr<std::shared_ptr<int>>);
  * static_assert(di::is_smart_ptr<std::unique_ptr<int>>);
  */
 template<class T> concept is_smart_ptr;
@@ -465,10 +444,6 @@ template<class T> concept is_smart_ptr;
  * @code
  * static_assert(not di::trait<int, std::is_const>);
  * static_assert(di::trait<const int, std::is_const>);
- * static_assert(not di::trait<const int&, std::is_pointer>);
- * static_assert(di::trait<int*, std::is_pointer>);
- * static_assert(not di::trait<int, std::is_class>);
- * static_assert(di::trait<std::shared_ptr<void>, std::is_class>);
  */
 template<class T, template<class...> class Trait> concept trait;
 
