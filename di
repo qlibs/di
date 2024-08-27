@@ -532,12 +532,19 @@ template<class T>
   > Dependency Injection (DI) - https://en.wikipedia.org/wiki/Dependency_injection - it's a technique focusing on producing loosely coupled code.
 
     ```cpp
-    struct no_di {                struct di {
-      constexpr no_di() { }         constexpr di(int data) : data{data} { } // DI
+    struct no_di {
+      constexpr no_di() { }
 
-     private:                      private:
-      int data = 42; /*coupled*/     int data{}; /*not coupled*/
-    };                            };
+     private:
+      int data = 42; /*coupled*/
+    };
+
+    struct di {
+      constexpr di(int data) : data{data} { } // DI
+
+     private:
+       int data{}; /*not coupled*/
+    };
     ```
 
     - In a very simplistic view, DI is about passing objects/types/etc via constructors and/or other forms of parameter propagating techniques instead of coupling values/types directly - `Hollywood Principle - Don't call us we'll call you`.
@@ -549,17 +556,29 @@ template<class T>
     Automatic DI requires a library and makes more sense for larger projects as it helps limitting the wiring mess and the maintenance burden assosiated with it.
 
     ```cpp
-    // No DI                  // DI                      // DI
-    struct coffee_maker {     struct coffee_maker_v1 {   struct coffee_maker_v2 {
-      coffee_maker();          coffee_maker(               coffee_maker(
-                                 iheater&,                   std::shared_ptr<ipump>,
-                                 ipump& pump                 std::unique_ptr<iheater>
-                               );                          );
+    struct coffee_maker {
+      coffee_maker(); // No DI
 
-     private:                 private:                    private:
-      basic_heater heater{};   iheater& heater  ;          std::shared_ptr<ipump> pump;
-      basic_pump pump{};       ipump& pump;                std::unique_ptr<iheater> heater;
-    };                       };                          };
+     private:
+      basic_heater heater{};
+      basic_pump pump{};
+    };
+
+    struct coffee_maker_v1 {
+      coffee_maker(iheater&, ipump& pump); // DI
+
+     private:
+      iheater& heater;
+      ipump& pump;
+    };
+
+    struct coffee_maker_v2 {
+      coffee_maker(std::shared_ptr<ipump>, std::unique_ptr<iheater>); // DI
+
+     private:
+      std::shared_ptr<ipump> pump;
+      std::unique_ptr<iheater> heater;
+    };
 
     int main() {
       // Manual Dependency Injection
