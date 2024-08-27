@@ -58,14 +58,17 @@
 > Dependency Injection
 
 ```cpp
-struct coffee_maker {       struct coffee_maker_v1 {        struct coffee_maker_v2 {
-  coffee_maker(); /*No DI*/   coffee_maker(iheater& heater,   coffee_maker(std::shared_ptr<ipump> pump,
-                               ipump& pump); /*DI*/            std::unique_ptr<iheater> heater); /*DI*/
+// No DI                   // DI                     // DI
+struct coffee_maker {      struct coffee_maker_v1 {  struct coffee_maker_v2 {
+  coffee_maker();           coffee_maker(              coffee_maker(
+                              iheater&,                  std::shared_ptr<ipump>,
+                              ipump& pump                std::unique_ptr<iheater>
+                            );                         );
 
- private:                    private:                        private:
-  basic_heater heater{};      iheater& heater{};              std::shared_ptr<ipump> pump;
-  basic_pump pump{};          ipump& pump{};                  std::unique_ptr<iheater> heater;
-};                          };                              };
+ private:                  private:                   private:
+  basic_heater heater{};    iheater& heater{};         std::shared_ptr<ipump> pump;
+  basic_pump pump{};        ipump& pump{};             std::unique_ptr<iheater> heater;
+};                        };                         };
 
 int main() {
   // Manual Dependency Injection
