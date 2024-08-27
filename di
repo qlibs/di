@@ -366,11 +366,11 @@ struct STL {
 int main() {
   auto stl = di::make<STL>(
     di::overload{
-      [](di::is<std::string> auto) { return std::string{"di"}; },
       [](di::is<std::vector<int>> auto) { return std::vector{1, 2, 3}; },
       [](di::is<std::shared_ptr<void>> auto) { return std::make_shared<int>(1); },
       [](di::is<std::unique_ptr<int>> auto) { return std::make_unique<int>(2); },
       [](di::is<std::array<int, 42>> auto) { return std::array<int, 42>{3}; },
+      [](di::is<std::string> auto) { return std::string{"di"}; },
       [](auto t) { return di::make(t); },
     }
   );
