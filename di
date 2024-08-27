@@ -486,6 +486,7 @@ struct provider {
  */
 template<class T>
 [[nodiscard]] constexpr auto make(auto&&...);
+} // namespace di
 ```
 
 ---
