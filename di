@@ -549,17 +549,17 @@ template<class T>
     Automatic DI requires a library and makes more sense for larger projects as it helps limitting the wiring mess and the maintenance burden assosiated with it.
 
     ```cpp
-    // No DI                   // DI                       // DI
-    struct coffee_maker {      struct coffee_maker_v1 {    struct coffee_maker_v2 {
-      coffee_maker();           coffee_maker(                coffee_maker(
-                                  iheater&,                    std::shared_ptr<ipump>,
-                                  ipump& pump                  std::unique_ptr<iheater>
-                                );                           );
+    // No DI                  // DI                      // DI
+    struct coffee_maker {     struct coffee_maker_v1 {   struct coffee_maker_v2 {
+      coffee_maker();          coffee_maker(               coffee_maker(
+                                 iheater&,                   std::shared_ptr<ipump>,
+                                 ipump& pump                 std::unique_ptr<iheater>
+                               );                          );
 
-     private:                  private:                     private:
-      basic_heater heater{};    iheater& heater  ;           std::shared_ptr<ipump> pump;
-      basic_pump pump{};        ipump& pump;                 std::unique_ptr<iheater> heater;
-    };                        };                           };
+     private:                 private:                    private:
+      basic_heater heater{};   iheater& heater  ;          std::shared_ptr<ipump> pump;
+      basic_pump pump{};       ipump& pump;                std::unique_ptr<iheater> heater;
+    };                       };                          };
 
     int main() {
       // Manual Dependency Injection
