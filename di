@@ -465,26 +465,18 @@ struct provider {
   using value_type = T;
   using parent_type = TParent;
 
-  static constexpr auto index()  -> std::size_t;
-  static constexpr auto parent() -> parent_type;
-  static constexpr auto type()   -> value_type;
-  static constexpr auto size()   -> std::size_t;
+  static constexpr auto index()  -> std::size_t;      /// index of parent constructor
+  static constexpr auto parent() -> parent_type;      /// callee provider
+  static constexpr auto type()   -> value_type;       /// underlying type
+  static constexpr auto size()   -> std::size_t;      /// size of parents
   #if defined(REFLECT)
-  static constexpr auto name()   -> std::string_view;
+  static constexpr auto name()   -> std::string_view; /// member name
   #endif
 };
 
 /**
  * @code
  * static_assert(42 == di::make<int>(42));
- * @endcode
- */
-template<class R, class... Ts>
-[[nodiscard]] constexpr auto make(Ts&&... ts)
-  requires requires { R{std::forward<Ts>(ts)...}; };
-
-/**
- * @code
  * static_assert(42 == di::make<int>(
  *   di::overload{
  *     [](di::is<int> auto) { return 42; }
@@ -492,9 +484,8 @@ template<class R, class... Ts>
  * ));
  * @endcode
  */
-template<class R, class T>
-[[nodiscard]] constexpr auto make(T&& t) requires invocable<T>;
-} // namespace di
+template<class T>
+[[nodiscard]] constexpr auto make(auto&&...);
 ```
 
 ---
