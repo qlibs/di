@@ -34,14 +34,6 @@
 
   > https://en.wikipedia.org/wiki/Dependency_injection
 
-  ```cpp
-  struct no_di {                  struct di {
-    no_di() { }                     di(int data) : data{data} { } // DI
-   private:                        private:
-    int data = 42; /*coupled*/       int data{}; /*not coupled*/
-  };                              };
-  ```
-
 ### Features
 
 - Single header (https://raw.githubusercontent.com/qlibs/di/main/di - for integration see [FAQ](#faq))
