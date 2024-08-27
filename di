@@ -648,7 +648,7 @@ template<class T>
 
 namespace di::inline v1_0_3 {
 namespace detail {
-template<class... Ts> struct type_list{
+template<class... Ts> struct type_list {
   static constexpr auto size() { return sizeof...(Ts); }
 };
 template<class T> struct provider { using value_type = T; };
