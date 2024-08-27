@@ -543,18 +543,23 @@ template<class T>
     - In a very simplistic view, DI is about passing objects/types/etc via constructors and/or other forms of parameter propagating techniques instead of coupling values/types directly - `Hollywood Principle - Don't call us we'll call you`.
     - The main goal of DI is the flexibility of changing what's being injected. It's important though, what and how is being injected as that influences how good (`ETC - Easy To Change`) the design will be - more about it here - https://www.youtube.com/watch?v=yVogS4NbL6U.
 
-    ```cpp
-    // No DI                   // DI                         // DI
-    struct coffee_maker {      struct coffee_maker_v1 {      struct coffee_maker_v2 {
-      coffee_maker();           coffee_maker(                  coffee_maker(
-                                  iheater&,                      std::shared_ptr<ipump>,
-                                  ipump& pump                    std::unique_ptr<iheater>
-                                );                             );
+- Manual vs Automatic Dependency Injection?
 
-     private:                  private:                       private:
-      basic_heater heater{};    iheater& heater  ;             std::shared_ptr<ipump> pump;
-      basic_pump pump{};        ipump& pump;                   std::unique_ptr<iheater> heater;
-    };                        };                             };
+  > Depedency Injection doesn't imply using a library.
+    Automatic DI requires a library and makes more sense for larger projects as it helps limitting the wiring mess and the maintenance burden assosiated with it.
+
+    ```cpp
+    // No DI                   // DI                       // DI
+    struct coffee_maker {      struct coffee_maker_v1 {    struct coffee_maker_v2 {
+      coffee_maker();           coffee_maker(                coffee_maker(
+                                  iheater&,                    std::shared_ptr<ipump>,
+                                  ipump& pump                  std::unique_ptr<iheater>
+                                );                           );
+
+     private:                  private:                     private:
+      basic_heater heater{};    iheater& heater  ;           std::shared_ptr<ipump> pump;
+      basic_pump pump{};        ipump& pump;                 std::unique_ptr<iheater> heater;
+    };                        };                           };
 
     int main() {
       // Manual Dependency Injection
