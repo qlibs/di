@@ -293,7 +293,7 @@ constexpr auto generic = di::overload{
 
 ### Examples
 
-> DIY - Dependency Injection Yourself (https://godbolt.org/z/jfqox9foY)
+> DIY - Dependency Injection Yourself (https://godbolt.org/z/acE3rYar5)
 
 ```cpp
 namespace di {
@@ -311,8 +311,10 @@ inline constexpr auto injector = [](auto&&... ts) {
 template<class T, class R = void>
 inline constexpr auto bind = [] {
   if constexpr (std::is_void_v<R>) {
-    return [](auto to) {
-      return [to](di::is<T> auto) { return to(); };
+    return [](T&& to) {
+      return [&](di::is<T> auto) -> decltype(auto) {
+        return std::forward<T>(to);
+      };
     };
   } else {
     return [](di::is<T> auto t) { return di::make<R>(t); };
@@ -325,7 +327,7 @@ inline constexpr auto bind = [] {
 int main() {
   auto injector = di::injector(
     di::bind<interface, implementation>,
-    di::bind<int>([] { return 42; })
+    di::bind<int>(42)
   );
 
   auto e = di::make<example>(injector);
