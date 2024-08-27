@@ -552,15 +552,19 @@ template<class T>
 
 - Dependency Injection?
 
-  > Dependency Injection (DI) - https://en.wikipedia.org/wiki/Dependency_injection - it's a powerful technique focusing on producing loosely coupled code. In a very simplistic view, it's about passing objects/types/etc via constructors and/or other forms of propagating techniques instead of coupling values/types directly, in-place. In other words, if dependencies are being injected in some way (templates, concepts, parameters, data, etc.) it's a form of dependency injection (Hollywood Principle - Don't call us we'll call you). The main goal being flexibility of changing what's being injected so that different configurations as well as testing can be achieved by design. What is important though, is what and how is being injected as that influences how good (ETC - Easy To Change) the design will be - more about it here - https://www.youtube.com/watch?v=yVogS4NbL6U.
+  > Dependency Injection (DI) - https://en.wikipedia.org/wiki/Dependency_injection - it's a powerful technique focusing on producing loosely coupled code.
+    - In a very simplistic view, it's about passing objects/types/etc via constructors and/or other forms of propagating techniques instead of coupling values/types directly, in-place.
+    - In other words, if dependencies are being injected in some way (templates, concepts, parameters, data, etc.) it's a form of dependency injection (Hollywood Principle - Don't call us we'll call you).
+    - The main goal being flexibility of changing what's being injected so that different configurations as well as testing can be achieved by design.
+    - What is important though, is what and how is being injected as that influences how good (ETC - Easy To Change) the design will be - more about it here - https://www.youtube.com/watch?v=yVogS4NbL6U.
 
-  ```cpp
-  struct no_di {                  struct di {
-    no_di() { }                     di(int data) : data{data} { } // DI
-   private:                        private:
-    int data = 42; // coupled       int data{}; // not coupled
-  };                              };
-  ```
+    ```cpp
+    struct no_di {                  struct di {
+      no_di() { }                     di(int data) : data{data} { } // DI
+     private:                        private:
+      int data = 42; // coupled       int data{}; // not coupled
+    };                              };
+    ```
 
   > **Manual dependency injection**
     - The idea is fairly simple. We have to create loosely coupled dependencies first. That can be achieved by following https://en.wikipedia.org/wiki/Test-driven_development, https://en.wikipedia.org/wiki/SOLID, https://en.wikipedia.org/wiki/Law_of_Demeter and other practices.
@@ -590,116 +594,116 @@ template<class T>
     };
     ```
 
-  - Do I use Dependency Injection correctly?
+- Do I use Dependency Injection correctly?
 
-    > Common mistakes when using Dependency Injection are:
+  > Common mistakes when using Dependency Injection are:
 
-      - **Passing a dependency to create another dependency inside your object**
+    - **Passing a dependency to create another dependency inside your object**
 
-        It's a bad practice to pass dependencies to an object just in order
-        to create another one with those dependencies.
-        It's much cleaner to create the latter object beforehand and pass it to the former.
+      It's a bad practice to pass dependencies to an object just in order
+      to create another one with those dependencies.
+      It's much cleaner to create the latter object beforehand and pass it to the former.
 
-        ```cpp
-        class Model {
-         public:
-           Model(int width, int height)
-             : board(std::make_unique<Board>(width, height)) // Bad
-           { }
+      ```cpp
+      class Model {
+       public:
+         Model(int width, int height)
+           : board(std::make_unique<Board>(width, height)) // Bad
+         { }
 
-           explicit Model(std::unique_ptr<IBoard> board) // Better
-             : board(std::move(board))
-           { }
+         explicit Model(std::unique_ptr<IBoard> board) // Better
+           : board(std::move(board))
+         { }
 
-           ...
+         ...
 
-         private:
-          std::unique_ptr<IBoard> board;
-        };
-        ```
+       private:
+        std::unique_ptr<IBoard> board;
+      };
+      ```
 
-      - **Carrying dependencies**
+    - **Carrying dependencies**
 
-        It's also important NOT to pass depenencies through layers of constructors (carrying them).
-        It's much better to always pass only dependecies which are required ONLY by the given constructor.
+      It's also important NOT to pass depenencies through layers of constructors (carrying them).
+      It's much better to always pass only dependecies which are required ONLY by the given constructor.
 
-        ```cpp
-        class Model : public Service { // Bad
-         public:
-           explicit Model(std::unique_ptr<IBoard> board) // Bad
-             : Service(std::move(board))
-           { }
+      ```cpp
+      class Model : public Service { // Bad
+       public:
+         explicit Model(std::unique_ptr<IBoard> board) // Bad
+           : Service(std::move(board))
+         { }
 
-           void update() {
-             Service::do_something_with_board(); // Bad
-           }
-        };
+         void update() {
+           Service::do_something_with_board(); // Bad
+         }
+      };
 
-        class Model { // Better
-         public:
-           explicit Model(std::unique_ptr<Service> service) // Better
-             : service(std::move(service))
-           { }
+      class Model { // Better
+       public:
+         explicit Model(std::unique_ptr<Service> service) // Better
+           : service(std::move(service))
+         { }
 
-           void update() {
-             service->do_something_with_board(); // Better
-           }
+         void update() {
+           service->do_something_with_board(); // Better
+         }
 
-         private:
-           std::unique_ptr<Service> service;
-        };
-        ```
+       private:
+         std::unique_ptr<Service> service;
+      };
+      ```
 
-      - **Carrying injector (Service Locator pattern)**
+    - **Carrying injector (Service Locator pattern)**
 
-        Service locator is consider to be an anti-pattern because its instance
-        is required to be passed as the ONLY constructor parameter into all
-        constructors. Such approach makes the code highly coupled to the Service Locator framework.
-        It's better to pass required dependencies direclty instead and use a DI framework to inject them.
+      Service locator is consider to be an anti-pattern because its instance
+      is required to be passed as the ONLY constructor parameter into all
+      constructors. Such approach makes the code highly coupled to the Service Locator framework.
+      It's better to pass required dependencies direclty instead and use a DI framework to inject them.
 
-        ```cpp
-        class Model {
-         public:
-           explicit Model(service_locator& sl) // Bad (ask)
-             : service(sl.resolve<unique_ptr<Service>>())
-           { }
+      ```cpp
+      class Model {
+       public:
+         explicit Model(service_locator& sl) // Bad (ask)
+           : service(sl.resolve<unique_ptr<Service>>())
+         { }
 
-           explicit Model(std::unique_ptr<Service> service) // Better (tell)
-             : service(std::move(service))
-           { }
+         explicit Model(std::unique_ptr<Service> service) // Better (tell)
+           : service(std::move(service))
+         { }
 
-           ...
+         ...
 
-         private:
-           std::unique_ptr<Service> service;
-        };
-        ```
+       private:
+         std::unique_ptr<Service> service;
+      };
+      ```
 
-  - **Not using strong typedefs for constructor parameters**
+    - **Not using strong typedefs for constructor parameters**
 
-    Being explicit and declarative is usually better than being impilicit.
-    Using common types (ex. numbers) in order to define any common-like type may cause
-    missusage of the constructor interface. Using `strong typedefs` is easier to follow and
-    protects against missusage of the constructor interface.
+      Being explicit and declarative is usually better than being impilicit.
+      Using common types (ex. numbers) in order to define any common-like type may cause
+      missusage of the constructor interface. Using `strong typedefs` is easier to follow and
+      protects against missusage of the constructor interface.
 
-    ```cpp
-    class Board {
-     public:
-       Board(int /*width*/, int /*height*/)  // Bad; Board{2, 3} vs Board{3, 2}?
+      ```cpp
+      class Board {
+       public:
+         Board(int /*width*/, int /*height*/)  // Bad; Board{2, 3} vs Board{3, 2}?
 
-       Board(width, height) // Better, explicit; Board{width{2}, height{3}};
+         Board(width, height) // Better, explicit; Board{width{2}, height{3}};
 
-       ...
-    };
-    ```
+         ...
+      };
+      ```
 
-  - Do I need a Dependency Injection?
+- Do I need a Dependency Injection?
 
   > - DI provides loosely coupled code (separation of business logic and object creation)
   > - DI provides easier to maintain code (different objects might be easily injected)
   > - DI provides easier to test code (fakes objects might be injected)
 
-  #### STUPID vs SOLID - "Clean Code" Uncle Bob
+- STUPID vs SOLID - "Clean Code" Uncle Bob
 
     <table>
       <tr><td><b>S</b></td><td>Singleton</td></tr>
@@ -720,7 +724,7 @@ template<class T>
       <tr><td><b>D</b></td><td><b>Dependency inversion</b></td></tr>
     </table>
 
-  - Do I need a DI Framework/Library?
+- Do I need a DI Framework/Library?
 
     > Depending on a project and its scale you may put up with or without a DI library, however, in any project a DI framework may **free you** from maintaining a following (boilerplate) code...
 
@@ -750,15 +754,15 @@ template<class T>
               * Hacks/Workarounds (~~Single Responsibility~~)
     ```
 
-    > Right now, let's imagine a project with hundreds or thousands of those dependencies and a critical issue
+    - Right now, let's imagine a project with hundreds or thousands of those dependencies and a critical issue
     which has to be fixed ASAP. Unfortunately, in order to fix the bug properly a new non-trivial dependency has to be
     introduced.
 
-    > Now, let's imagine that a someone figured out that it will be much easier to extend the functionally
+    - Now, let's imagine that a someone figured out that it will be much easier to extend the functionally
     of already passed object and sneak a workaround/'solution' this way. Such approach will possibly break the **[single responsibility principle](https://en.wikipedia.org/wiki/Single_responsibility_principle)**
     of the changed object but no worries though, it might be refactored later on (meaning: most likely, the workaround will stay unchanged forever and that there are no tests).
 
-    **If that sounds familiar**, take a look into DI library as it helps to solve developer dilemma by taking care
+    - **If that sounds familiar**, take a look into DI library as it helps to solve developer dilemma by taking care
     of creating all required dependencies whereas dev may focus on fixing and testing the issue.
 
 - How does it work?
