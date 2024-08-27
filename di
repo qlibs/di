@@ -386,7 +386,7 @@ int main() {
 }
 ```
 
-> `is_structural` (https://godbolt.org/z/1Mrxfbaqb)
+> `is_structural` - https://eel.is/c++draft/temp.param#def:type,structural (https://godbolt.org/z/1Mrxfbaqb)
 
 ```cpp
 template<class T, auto cfg =
