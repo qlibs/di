@@ -32,7 +32,7 @@
 [![Build](https://img.shields.io/badge/build-green.svg)](https://godbolt.org/z/fKEcojqze)
 [![Try it online](https://img.shields.io/badge/try%20it-online-blue.svg)](https://godbolt.org/z/xrzsYG1bj)
 
-  > https://en.wikipedia.org/wiki/Dependency_injection ([More Info](#faq))
+  > https://en.wikipedia.org/wiki/Dependency_injection (for additional info see [FAQ](#faq))
 
 ### Features
 
