@@ -433,7 +433,7 @@ static_assert(not is_structural<c5>);
 ### API
 
 ```cpp
-namespace di::inline v1_0_3 {
+namespace di::inline v1_0_4 {
 /**
  * @code
  * struct c1 { c1(int) { } };
@@ -622,7 +622,7 @@ template<class T>
     FetchContent_Declare(
       qlibs.di
       GIT_REPOSITORY https://github.com/qlibs/di
-      GIT_TAG v1.0.3
+      GIT_TAG v1.0.4
     )
 
     FetchContent_MakeAvailable(qlibs.di)
@@ -646,7 +646,7 @@ template<class T>
 #include <type_traits>
 #include <memory>
 
-namespace di::inline v1_0_3 {
+namespace di::inline v1_0_4 {
 namespace detail {
 template<class... Ts> struct type_list {
   static constexpr auto size() { return sizeof...(Ts); }
