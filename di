@@ -558,7 +558,7 @@ template<class T>
 
 - How does it work?
 
-  > `DI` works by deducing constructor parameters and calling appropriate overload to handle them by leavaring concepts (https://eel.is/c++draft/temp.constr.order#def:constraint,subsumption).
+  > `DI` works by deducing constructor parameters and calling appropriate overload to handle them by leavaring concepts - https://eel.is/c++draft/temp.constr.order#def:constraint,subsumption.
     The following represents the most important parts of the library design.
 
     ```cpp
