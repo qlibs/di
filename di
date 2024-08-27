@@ -58,23 +58,11 @@
 > API (https://godbolt.org/z/zPxM9KjM8)
 
 ```cpp
-struct aggregate1 {
-  int i1{};
-  int i2{};
-  constexpr auto operator==(const aggregate1&) const -> bool = default;
-};
-struct aggregate2 {
-  int i2{}; // instead of i1
-  int i1{}; // instead of i2
-  constexpr auto operator==(const aggregate2&) const -> bool = default;
-};
+struct aggregate1 { int i1{}; int i2{}; };
+struct aggregate2 { int i2{}; int i1{}; };
+struct aggregate  { aggregate1 a1{}; aggregate2 a2{}; };
 
-struct aggregate {
-  aggregate1 a1{};
-  aggregate2 a2{};
-};
-
-// di::make
+// di::make (basic)
 {
   static_assert(42 == di::make<int>(42));
   static_assert(aggregate1{1, 2} == di::make<aggregate1>(1, 2));
@@ -199,7 +187,7 @@ constexpr auto generic = di::overload{
     generic,
 
     [](di::is<interface> auto t) { return di::make<implementation>(t); },
-    [&](di::is<int> auto) -> decltype(auto) { return i; },
+    [&](di::is<int> auto) -> decltype(auto) { return i; }, // instance
 
     // scopes
     [](di::trait<std::is_reference> auto t) -> decltype(auto) {
@@ -220,8 +208,8 @@ constexpr auto generic = di::overload{
   // testing (override bindings)
   {
     auto testing = di::overload{
-      [](di::trait<std::is_integral> auto) { return 1000; },
-      [bindings](auto t) -> decltype(auto) { return bindings(t); },
+      [](di::trait<std::is_integral> auto) { return 1000; }, // priority
+      [bindings](auto t) -> decltype(auto) { return bindings(t); }, // otherwise
     };
 
     auto e = di::make<example>(testing);
@@ -293,7 +281,7 @@ constexpr auto generic = di::overload{
 // errors
 {
   (void)di::make<aggregate1>(di::overload{
-    // [](di::is<int> auto) { return 42; },
+    // [](di::is<int> auto) { return 42; }, // missing binding
     [](auto t) { return di::make(t); },
   }); // di::error<int, ...>
 }
