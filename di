@@ -545,7 +545,7 @@ template<class T>
 
 - Manual vs Automatic Dependency Injection?
 
-  > Depedency Injection doesn't imply using a library.
+  > Depedency Injection doesnt imply using a library.
     Automatic DI requires a library and makes more sense for larger projects as it helps limitting the wiring mess and the maintenance burden assosiated with it.
 
     ```cpp
