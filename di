@@ -533,17 +533,17 @@ template<class T>
 
     ```cpp
     struct no_di {
-      constexpr no_di() { }
+      constexpr no_di() { } // No DI
 
      private:
-      int data = 42; /*coupled*/
+      int data = 42; // coupled
     };
 
     struct di {
       constexpr di(int data) : data{data} { } // DI
 
      private:
-       int data{}; /*not coupled*/
+       int data{};
     };
     ```
 
