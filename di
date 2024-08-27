@@ -633,9 +633,12 @@ template<class T>
     ```
 
 - Acknowledgments
-  > (video) ["Dependency Injection - a 25-dollar term for a 5-cent concept"](https://www.youtube.com/watch?v=yVogS4NbL6U)
-  > (video) ["Law of Demeter: A Practical Guide to Loose Coupling"](https://www.youtube.com/watch?v=QZkVpZlbM4U)
-  > (book) ["Clean Code: A Handbook of Agile Software Craftsmanship"](https://www.amazon.com/Clean-Code-Handbook-Software-Craftsmanship/dp/0132350882)
+  > - (video) ["Dependency Injection - a 25-dollar term for a 5-cent concept"](https://www.youtube.com/watch?v=yVogS4NbL6U)
+  > - (video) ["Law of Demeter: A Practical Guide to Loose Coupling"](https://www.youtube.com/watch?v=QZkVpZlbM4U)
+  > - (book) ["Clean Code: A Handbook of Agile Software Craftsmanship"](https://www.amazon.com/Clean-Code-Handbook-Software-Craftsmanship/dp/0132350882)
+
+- Similar projects?
+  > [boost-ext.di](https://github.com/boost-ext/di), [google.fruit](https://github.com/google/fruit)
 
 <!--
 #endif
