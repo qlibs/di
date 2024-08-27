@@ -541,12 +541,12 @@ struct provider {
   using value_type = T;
   using parent_type = TParent;
 
-  static constexpr auto index()  -> std::size_t;      /// index of parent constructor
-  static constexpr auto parent() -> parent_type;      /// callee provider
-  static constexpr auto type()   -> value_type;       /// underlying type
-  static constexpr auto size()   -> std::size_t;      /// size of parents
+  static constexpr auto index()  -> std::size_t;      // index of parent constructor
+  static constexpr auto parent() -> parent_type;      // callee provider
+  static constexpr auto type()   -> value_type;       // underlying type
+  static constexpr auto size()   -> std::size_t;      // size of parents
   #if defined(REFLECT)
-  static constexpr auto name()   -> std::string_view; /// member name
+  static constexpr auto name()   -> std::string_view; // member name
   #endif
 };
 
