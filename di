@@ -350,7 +350,7 @@ int main() {
 }
 ```
 
-> `is_structural` (https://godbolt.org/z/8qaK5aKTq)
+> `is_structural` (https://godbolt.org/z/j9T4j3q5q)
 
 ```cpp
 template<class T, auto cfg =
@@ -362,9 +362,7 @@ template<class T, auto cfg =
       return di::make(t);
     }
   }
-> concept is_structural = requires {
-  []<T = di::make<T>(cfg)>{}();
-};
+> concept is_structural = requires { []<T = di::make<T>(cfg)>{}(); };
 
 static_assert(is_structural<int>);
 static_assert(not is_structural<std::optional<int>>);
@@ -539,7 +537,7 @@ template<class T> struct provider { using value_type = T; };
 template<class, std::size_t> struct arg { friend constexpr auto get(arg); };
 template<class T, class R> struct bind { friend constexpr auto get(T) { return provider<R>{}; } };
 template<class T, class R> concept copy_or_move = std::is_same_v<T, std::remove_cvref_t<R>>;
-template<class T, std::size_t N> struct any final {
+template<class T, std::size_t N> struct any {
   template<class R> requires (not copy_or_move<T, R>) operator R() noexcept(noexcept(bind<arg<T, N>, R>{}));
   template<class R> requires (not copy_or_move<T, R>) operator R&() const noexcept(noexcept(bind<arg<T, N>, R&>{}));
   template<class R> requires (not copy_or_move<T, R>) operator const R&() const noexcept(noexcept(bind<arg<T, N>, const R&>{}));
@@ -663,9 +661,13 @@ template<class R, class T>
   }();
   const auto make = [&]<template<class...> class TList, class... Ts>(TList<Ts...>) -> decltype(auto) {
     return [&]<std::size_t... Ns>(std::index_sequence<Ns...>) -> decltype(auto) {
-      return ctor_traits<R>{}(
-        t(provider<Ts, std::integral_constant<std::size_t, Ns>, std::remove_cvref_t<decltype(t)>>{std::forward<decltype(t)>(t)})...
-      );
+      if constexpr (requires { ctor_traits<R>{}(t(provider<Ts, std::integral_constant<std::size_t, Ns>, std::remove_cvref_t<decltype(t)>>{std::forward<decltype(t)>(t)})...); }) {
+        return ctor_traits<R>{}(
+          t(provider<Ts, std::integral_constant<std::size_t, Ns>, std::remove_cvref_t<decltype(t)>>{std::forward<decltype(t)>(t)})...
+        );
+      } else {
+        return error<R>(t);
+      }
     }(std::make_index_sequence<sizeof...(Ts)>{});
   };
   if constexpr (requires { typename std::remove_cvref_t<decltype(t)>::parent_type::value_type; }) {
