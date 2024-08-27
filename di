@@ -585,12 +585,12 @@ template<class T>
   > Dependency Injection (DI) - https://en.wikipedia.org/wiki/Dependency_injection - it's a technique focusing on producing loosely coupled code.
 
     ```cpp
-    struct no_di {                  struct di {
-      constexpr no_di() { }           constexpr di(int data) : data{data} { } // Dependency Injection
+    struct no_di {                struct di {
+      constexpr no_di() { }         constexpr di(int data) : data{data} { } // DI
 
-     private:                        private:
-      int data = 42; /*coupled*/       int data{}; /*not coupled*/
-    };                              };
+     private:                      private:
+      int data = 42; /*coupled*/     int data{}; /*not coupled*/
+    };                            };
     ```
 
     - In a very simplistic view, DI is about passing objects/types/etc via constructors and/or other forms of parameter propagating techniques instead of coupling values/types directly - `Hollywood Principle - Don't call us we'll call you`.
