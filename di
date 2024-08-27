@@ -350,7 +350,7 @@ int main() {
 }
 ```
 
-> `is_structural` (https://godbolt.org/z/j9T4j3q5q)
+> `is_structural` (https://godbolt.org/z/1Mrxfbaqb)
 
 ```cpp
 template<class T, auto cfg =
