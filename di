@@ -80,7 +80,7 @@ int main() {
   {
     auto pump = std::make_shared<basic_pump>();
     auto heater = std::make_unique<basic_heater>();
-    coffe_maker_v2 cm{pump, std::move(heater)}; // wiring diff
+    coffe_maker_v2 cm{pump, std::move(heater)}; // different wiring
   }
 
   // Automatic Dependency Injection
