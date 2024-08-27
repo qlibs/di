@@ -55,48 +55,6 @@
 
 ### Overview
 
-> Dependency Injection
-
-```cpp
-// No DI                   // DI                         // DI
-struct coffee_maker {      struct coffee_maker_v1 {      struct coffee_maker_v2 {
-  coffee_maker();           coffee_maker(                  coffee_maker(
-                              iheater&,                      std::shared_ptr<ipump>,
-                              ipump& pump                    std::unique_ptr<iheater>
-                            );                             );
-
- private:                  private:                       private:
-  basic_heater heater{};    iheater& heater  ;             std::shared_ptr<ipump> pump;
-  basic_pump pump{};        ipump& pump;                   std::unique_ptr<iheater> heater;
-};                        };                             };
-
-int main() {
-  // Manual Dependency Injection
-  {
-    basic_heater heater{};
-    basic_pump pump{};
-    coffe_maker_v1 cm{heater, pump};
-  }
-  {
-    auto pump = std::make_shared<basic_pump>();
-    auto heater = std::make_unique<basic_heater>();
-    coffe_maker_v2 cm{pump, std::move(heater)}; // different wiring
-  }
-
-  // Automatic Dependency Injection
-  auto wiring = di::overload{
-    [](di::is<iheater> auto) { return make<basic_heater>(); },
-    [](di::is<ipump> auto)   { return make<basic_pump>(); },
-  };
-  {
-    auto cm = di::make<coffee_maker_v1>(wiring);
-  }
-  {
-    auto cm = di::make<coffee_maker_v2>(wiring); // same wiring
-  }
-}
-```
-
 > API (https://godbolt.org/z/xrzsYG1bj)
 
 ```cpp
@@ -584,6 +542,46 @@ template<class T>
 
     - In a very simplistic view, DI is about passing objects/types/etc via constructors and/or other forms of parameter propagating techniques instead of coupling values/types directly - `Hollywood Principle - Don't call us we'll call you`.
     - The main goal of DI is the flexibility of changing what's being injected. It's important though, what and how is being injected as that influences how good (`ETC - Easy To Change`) the design will be - more about it here - https://www.youtube.com/watch?v=yVogS4NbL6U.
+
+    ```cpp
+    // No DI                   // DI                         // DI
+    struct coffee_maker {      struct coffee_maker_v1 {      struct coffee_maker_v2 {
+      coffee_maker();           coffee_maker(                  coffee_maker(
+                                  iheater&,                      std::shared_ptr<ipump>,
+                                  ipump& pump                    std::unique_ptr<iheater>
+                                );                             );
+
+     private:                  private:                       private:
+      basic_heater heater{};    iheater& heater  ;             std::shared_ptr<ipump> pump;
+      basic_pump pump{};        ipump& pump;                   std::unique_ptr<iheater> heater;
+    };                        };                             };
+
+    int main() {
+      // Manual Dependency Injection
+      {
+        basic_heater heater{};
+        basic_pump pump{};
+        coffe_maker_v1 cm{heater, pump};
+      }
+      {
+        auto pump = std::make_shared<basic_pump>();
+        auto heater = std::make_unique<basic_heater>();
+        coffe_maker_v2 cm{pump, std::move(heater)}; // different wiring
+      }
+
+      // Automatic Dependency Injection
+      auto wiring = di::overload{
+        [](di::is<iheater> auto) { return make<basic_heater>(); },
+        [](di::is<ipump> auto)   { return make<basic_pump>(); },
+      };
+      {
+        auto cm = di::make<coffee_maker_v1>(wiring);
+      }
+      {
+        auto cm = di::make<coffee_maker_v2>(wiring); // same wiring
+      }
+    }
+    ```
 
 - How does it work?
 
