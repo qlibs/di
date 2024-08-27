@@ -491,6 +491,59 @@ template<class T>
 
 ### FAQ
 
+- How does it work?
+
+  > `di` works by deducing constructor parameters and calling appropriate overload to handle them.
+    The following represents the most important parts of the library design.
+
+    ```cpp
+    template<class T, class R>
+    concept copy_or_move = std::is_same_v<T, std::remove_cvref_t<R>>;
+
+    template<class T, std::size_t N> struct any {
+      template<class R> requires (not copy_or_move<T, R>)
+        operator R() noexcept(noexcept(bind<arg<T, N>, R>{}));
+      template<class R> requires (not copy_or_move<T, R>)
+        operator R&() const noexcept(noexcept(bind<arg<T, N>, R&>{}));
+      template<class R> requires (not copy_or_move<T, R>)
+        operator const R&() const noexcept(noexcept(bind<arg<T, N>, const R&>{}));
+      template<class R> requires (not copy_or_move<T, R>)
+        operator R&&() const noexcept(noexcept(bind<arg<T, N>, R&&>{}));
+    };
+    ```
+
+    ```cpp
+    template<class T, std::size_t N = 16u> constexpr auto ctor_traits() {
+      return []<std::size_t... Ns>(std::index_sequence<Ns...>) {
+        if constexpr (requires { T{any<T, Ns>{}...}; }) {
+          return type_list<typename decltype(get(detail::arg<T, Ns>{}))::value_type...>{};
+        } else if constexpr (sizeof...(Ns)) {
+          return ctor_traits<T, N - 1u>();
+        } else {
+          return type_list{};
+        }
+      }(std::make_index_sequence<N>{});
+    }
+    ```
+
+    ```cpp
+    template<class... Ts> struct overload : Ts... { using Ts::operator()...; };
+    template<class... Ts> overload(Ts...) -> overload<Ts...>;
+    ```
+
+    ```cpp
+    template<class T, class...> auto error(auto&&...) -> T;
+    template<class T> constexpr auto make(invocable auto&& t) {
+      return [&]<template<class...> class TList, class... Ts>(TList<Ts...>) {
+        if constexpr (requires { T(t(provider<Ts>(t)...); }) {
+          return T(t(provider<Ts>(t)...);
+        } else {
+          return error<R>(t);
+        }
+      }(ctor_traits<T>());
+    };
+    ```
+
 - How to disable running tests at compile-time?
 
     > When `-DNTEST` is defined static_asserts tests wont be executed upon include.
