@@ -55,6 +55,59 @@
 
 ### Overview
 
+> Dependency Injection
+
+```cpp
+struct coffee_maker {
+  coffee_maker(); // No Dependency Injection
+
+ private:
+  basic_heater heater{}; // coupled
+  basic_pump pump{}; // coupled
+};
+
+struct coffee_maker_v1 {
+  coffee_maker(iheater& heater, ipump& pump); // Dependency Injection
+
+ private:
+  iheater& heater{}; // not coupled
+  ipump& pump{}; // not coupled
+};
+
+struct coffee_maker_v2 {
+  coffee_maker(std::shared_ptr<ipump> pump,
+               std::unique_ptr<iheater> heater); // Dependency Injection
+
+ private:
+  std::shared_ptr<ipump> pump; // not coupled
+  std::unique_ptr<iheater> heater; // not coupled
+};
+
+int main() {
+  // Manual Dependency Injection
+  {
+    basic_heater heater{};
+    basic_pump pump{};
+    coffe_maker_v1 cm{heater, pump};
+  }
+  {
+    auto pump = std::make_shared<basic_pump>();
+    auto heater = std::make_unique<basic_heater>();
+    coffe_maker_v2 cm{pump, std::move(heater)}; // wiring diff!
+  }
+
+  // Automatic Dependency Injection
+  {
+    auto wiring = di::overload{
+      [](di::is<iheater> auto) { return make<basic_heater>(); },
+      [](di::is<ipump> auto) { return make<basic_pump>(); },
+    };
+    auto cm = di::make<coffee_maker_v1>(wiring);
+    auto cm = di::make<coffee_maker_v2>(wiring); // same wiring!
+  }
+}
+```
+
 > API (https://godbolt.org/z/xrzsYG1bj)
 
 ```cpp
@@ -529,20 +582,19 @@ template<class T>
 
 - Dependency Injection?
 
-  > Dependency Injection (DI) - https://en.wikipedia.org/wiki/Dependency_injection - it's a powerful technique focusing on producing loosely coupled code.
+  > Dependency Injection (DI) - https://en.wikipedia.org/wiki/Dependency_injection - it's a technique focusing on producing loosely coupled code.
 
     ```cpp
     struct no_di {                  struct di {
-      no_di() { }                     di(int data) : data{data} { } // DI
+      constexpr no_di() { }           constexpr di(int data) : data{data} { } // Dependency Injection
+
      private:                        private:
       int data = 42; /*coupled*/       int data{}; /*not coupled*/
     };                              };
     ```
 
-    - In a very simplistic view, it's about passing objects/types/etc via constructors and/or other forms of propagating techniques instead of coupling values/types directly, in-place.
-    - In other words, if dependencies are being injected in some way (templates, concepts, parameters, data, etc.) it's a form of dependency injection (Hollywood Principle - Don't call us we'll call you).
-    - The main goal being flexibility of changing what's being injected so that different configurations as well as testing can be achieved by design.
-    - What is important though, is what and how is being injected as that influences how good (ETC - Easy To Change) the design will be - more about it here - https://www.youtube.com/watch?v=yVogS4NbL6U.
+    - In a very simplistic view, DI is about passing objects/types/etc via constructors and/or other forms of parameter propagating techniques instead of coupling values/types directly - `Hollywood Principle - Don't call us we'll call you`.
+    - The main goal of DI is the flexibility of changing what's being injected. It's important though, what and how is being injected as that influences how good (`ETC - Easy To Change`) the design will be - more about it here - https://www.youtube.com/watch?v=yVogS4NbL6U.
 
 - How does it work?
 
