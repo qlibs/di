@@ -350,6 +350,52 @@ int main() {
 }
 ```
 
+> Standard Template Library (https://godbolt.org/z/jjbnffKne)
+
+```cpp
+struct STL {
+  STL(std::vector<int> vector,
+      std::shared_ptr<void> shared_ptr,
+      std::unique_ptr<int> unique_ptr,
+      std::array<int, 42> array,
+      std::string string)
+    : vector(vector)
+    , shared_ptr(shared_ptr)
+    , unique_ptr(std::move(unique_ptr))
+    , array(array)
+    , string(string)
+  { }
+
+  std::vector<int> vector;
+  std::shared_ptr<void> shared_ptr;
+  std::unique_ptr<int> unique_ptr;
+  std::array<int, 42> array;
+  std::string string;
+};
+
+int main() {
+  auto stl = di::make<STL>(
+    di::overload{
+      [](di::is<std::string> auto) { return std::string{"di"}; },
+      [](di::is<std::vector<int>> auto) { return std::vector{1, 2, 3}; },
+      [](di::is<std::shared_ptr<void>> auto) { return std::make_shared<int>(1); },
+      [](di::is<std::unique_ptr<int>> auto) { return std::make_unique<int>(2); },
+      [](di::is<std::array<int, 42>> auto) { return std::array<int, 42>{3}; },
+      [](auto t) { return di::make(t); },
+    }
+  );
+
+  assert(3u == stl.vector.size());
+  assert(1 == stl.vector[0]);
+  assert(2 == stl.vector[1]);
+  assert(3 == stl.vector[2]);
+  assert(1 == *static_cast<const int*>(stl.shared_ptr.get()));
+  assert(2 == *stl.unique_ptr);
+  assert(3 == stl.array[0]);
+  assert("di" == stl.string);
+}
+```
+
 > `is_structural` (https://godbolt.org/z/1Mrxfbaqb)
 
 ```cpp
@@ -600,7 +646,7 @@ template<class T, std::size_t N> struct any {
 template<class T, std::size_t N = 16u> struct ctor_traits {
   using type = detail::type_list<>;
   [[nodiscard]] constexpr auto operator()() const -> T {
-    return {};
+    return T{};
   }
   static constexpr auto size() { return type::size(); }
 };
