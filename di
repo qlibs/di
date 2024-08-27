@@ -58,30 +58,14 @@
 > Dependency Injection
 
 ```cpp
-struct coffee_maker {
-  coffee_maker(); // No Dependency Injection
+struct coffee_maker {       struct coffee_maker_v1 {        struct coffee_maker_v2 {
+  coffee_maker(); /*No DI*/   coffee_maker(iheater& heater,   coffee_maker(std::shared_ptr<ipump> pump,
+                               ipump& pump); /*DI*/            std::unique_ptr<iheater> heater); /*DI*/
 
- private:
-  basic_heater heater{}; // coupled
-  basic_pump pump{}; // coupled
-};
-
-struct coffee_maker_v1 {
-  coffee_maker(iheater& heater, ipump& pump); // Dependency Injection
-
- private:
-  iheater& heater{}; // not coupled
-  ipump& pump{}; // not coupled
-};
-
-struct coffee_maker_v2 {
-  coffee_maker(std::shared_ptr<ipump> pump,
-               std::unique_ptr<iheater> heater); // Dependency Injection
-
- private:
-  std::shared_ptr<ipump> pump; // not coupled
-  std::unique_ptr<iheater> heater; // not coupled
-};
+ private:                    private:                        private:
+  basic_heater heater{};      iheater& heater{};              std::shared_ptr<ipump> pump;
+  basic_pump pump{};          ipump& pump{};                  std::unique_ptr<iheater> heater;
+};                          };                              };
 
 int main() {
   // Manual Dependency Injection
@@ -93,7 +77,7 @@ int main() {
   {
     auto pump = std::make_shared<basic_pump>();
     auto heater = std::make_unique<basic_heater>();
-    coffe_maker_v2 cm{pump, std::move(heater)}; // wiring diff!
+    coffe_maker_v2 cm{pump, std::move(heater)}; // wiring diff
   }
 
   // Automatic Dependency Injection
@@ -103,7 +87,7 @@ int main() {
       [](di::is<ipump> auto) { return make<basic_pump>(); },
     };
     auto cm = di::make<coffee_maker_v1>(wiring);
-    auto cm = di::make<coffee_maker_v2>(wiring); // same wiring!
+    auto cm = di::make<coffee_maker_v2>(wiring); // same wiring
   }
 }
 ```
