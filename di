@@ -58,17 +58,17 @@
 > Dependency Injection
 
 ```cpp
-// No DI                   // DI                     // DI
-struct coffee_maker {      struct coffee_maker_v1 {  struct coffee_maker_v2 {
-  coffee_maker();           coffee_maker(              coffee_maker(
-                              iheater&,                  std::shared_ptr<ipump>,
-                              ipump& pump                std::unique_ptr<iheater>
-                            );                         );
+// No DI                   // DI                         // DI
+struct coffee_maker {      struct coffee_maker_v1 {      struct coffee_maker_v2 {
+  coffee_maker();           coffee_maker(                  coffee_maker(
+                              iheater&,                      std::shared_ptr<ipump>,
+                              ipump& pump                    std::unique_ptr<iheater>
+                            );                             );
 
- private:                  private:                   private:
-  basic_heater heater{};    iheater& heater{};         std::shared_ptr<ipump> pump;
-  basic_pump pump{};        ipump& pump{};             std::unique_ptr<iheater> heater;
-};                        };                         };
+ private:                  private:                       private:
+  basic_heater heater{};    iheater& heater{};             std::shared_ptr<ipump> pump;
+  basic_pump pump{};        ipump& pump{};                 std::unique_ptr<iheater> heater;
+};                        };                             };
 
 int main() {
   // Manual Dependency Injection
@@ -84,12 +84,14 @@ int main() {
   }
 
   // Automatic Dependency Injection
+  auto wiring = di::overload{
+    [](di::is<iheater> auto) { return make<basic_heater>(); },
+    [](di::is<ipump> auto)   { return make<basic_pump>(); },
+  };
   {
-    auto wiring = di::overload{
-      [](di::is<iheater> auto) { return make<basic_heater>(); },
-      [](di::is<ipump> auto) { return make<basic_pump>(); },
-    };
     auto cm = di::make<coffee_maker_v1>(wiring);
+  }
+  {
     auto cm = di::make<coffee_maker_v2>(wiring); // same wiring
   }
 }
