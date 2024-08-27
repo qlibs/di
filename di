@@ -66,8 +66,8 @@ struct coffee_maker {      struct coffee_maker_v1 {      struct coffee_maker_v2 
                             );                             );
 
  private:                  private:                       private:
-  basic_heater heater{};    iheater& heater{};             std::shared_ptr<ipump> pump;
-  basic_pump pump{};        ipump& pump{};                 std::unique_ptr<iheater> heater;
+  basic_heater heater{};    iheater& heater  ;             std::shared_ptr<ipump> pump;
+  basic_pump pump{};        ipump& pump;                   std::unique_ptr<iheater> heater;
 };                        };                             };
 
 int main() {
