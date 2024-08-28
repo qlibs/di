@@ -694,7 +694,7 @@ template<class T>
   > - ["Test Driven Development: By Example"](https://www.amazon.com/Test-Driven-Development-Kent-Beck/dp/0321146530) (book)
 
 - Similar projects?
-  > [boost-ext.di](https://github.com/boost-ext/di), [google.fruit](https://github.com/google/fruit)
+  > [boost-ext.di](https://github.com/boost-ext/di), [google.fruit](https://github.com/google/fruit), [Kangaru](https://github.com/gracicot/kangaru), [Wallaroo](https://wallaroolib.sourceforge.net), [Hypodermic](https://github.com/ybainier/Hypodermic)
 
 <!--
 #endif
