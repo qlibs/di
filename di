@@ -547,7 +547,7 @@ template<class T>
     };
     ```
 
-    - In a very simplistic view, DI is about passing objects/types/etc via constructors and/or other forms of parameter propagating techniques instead of coupling values/types directly - `Hollywood Principle - Don't call us we'll call you`.
+    - In a very simplistic view, DI is about passing objects/types/etc via constructors and/or other forms of parameter propagating techniques instead of coupling values/types directly (`Hollywood Principle - Don't call us we'll call you`).
     - The main goal of DI is the flexibility of changing what's being injected. It's important though, what and how is being injected as that influences how good (`ETC - Easy To Change`) the design will be - more about it here - https://www.youtube.com/watch?v=yVogS4NbL6U.
 
 - Manual vs Automatic Dependency Injection?
@@ -560,24 +560,24 @@ template<class T>
       coffee_maker(); // No DI
 
      private:
-      basic_heater heater{};
-      basic_pump pump{};
+      basic_heater heater{}; // coupled
+      basic_pump pump{}; // coupled
     };
 
     struct coffee_maker_v1 {
       coffee_maker(iheater&, ipump& pump); // DI
 
      private:
-      iheater& heater;
-      ipump& pump;
+      iheater& heater; // not coupled
+      ipump& pump; // not coupled
     };
 
     struct coffee_maker_v2 {
       coffee_maker(std::shared_ptr<ipump>, std::unique_ptr<iheater>); // DI
 
      private:
-      std::shared_ptr<ipump> pump;
-      std::unique_ptr<iheater> heater;
+      std::shared_ptr<ipump> pump; // not coupled
+      std::unique_ptr<iheater> heater; // not coupled
     };
 
     int main() {
@@ -606,6 +606,8 @@ template<class T>
       }
     }
     ```
+
+    > The main goal of automatic is to **avoid design compromises** in order to reduce the boilerplate code/minimize maintance burden/simplify testing.
 
 - How does it work?
 
