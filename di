@@ -39,7 +39,7 @@
 - Single header (https://raw.githubusercontent.com/qlibs/di/main/di - for integration see [FAQ](#faq))
 - Verifies itself upon include (can be disabled with `-DNTEST` - see [FAQ](#faq))
 - Minimal [API](#api)
-  - Unified way for different polymorphism styles (`inheritance, type_erasure, variant, ...`)
+  - Unified way for different polymorphism styles (`inheritance, type erasure, variant, ...`)
     - [Generic factories](https://en.wikipedia.org/wiki/Factory_method_pattern)
   - Constructor deduction for classes and aggregates
   - Constructor order and types changes agnostic (simplifies integration with `third party` libraries)
@@ -798,7 +798,7 @@ concept trait = Trait<detail::value_type_t<T>>::value;
 template<class... Ts> struct overload : Ts... { using Ts::operator()...; };
 template<class... Ts> overload(Ts...) -> overload<Ts...>;
 
-template<class R, class...> auto error(auto&&...) -> R;
+template<class T, class...> auto error(auto&&...) -> T;
 template<class T, class Index, class TParent>
 struct provider : TParent {
   using value_type = T;
