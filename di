@@ -667,24 +667,6 @@ template<class T>
     > When `-DNTEST` is defined static_asserts tests wont be executed upon include.
     Note: Use with caution as disabling tests means that there are no gurantees upon include that given compiler/env combination works as expected.
 
-- How to integrate with [CMake.FetchContent](https://cmake.org/cmake/help/latest/module/FetchContent.html)?
-
-    ```
-    include(FetchContent)
-
-    FetchContent_Declare(
-      qlibs.di
-      GIT_REPOSITORY https://github.com/qlibs/di
-      GIT_TAG v1.0.5
-    )
-
-    FetchContent_MakeAvailable(qlibs.di)
-    ```
-
-    ```
-    target_link_libraries(${PROJECT_NAME} PUBLIC qlibs.di);
-    ```
-
 - Acknowledgments
   > - ["Dependency Injection - a 25-dollar term for a 5-cent concept"](https://www.youtube.com/watch?v=yVogS4NbL6U) (video)
   > - ["Law of Demeter: A Practical Guide to Loose Coupling"](https://www.youtube.com/watch?v=QZkVpZlbM4U) (video)
@@ -799,6 +781,7 @@ template<class... Ts> struct overload : Ts... { using Ts::operator()...; };
 template<class... Ts> overload(Ts...) -> overload<Ts...>;
 
 template<class T, class...> auto error(auto&&...) -> T;
+
 template<class T, class Index, class TParent>
 struct provider : TParent {
   using value_type = T;
@@ -862,6 +845,22 @@ template<class R, class T>
 [[nodiscard]] constexpr auto make(auto&& t)
   -> decltype(di::make<typename std::remove_cvref_t<decltype(t)>::value_type>(t)) {
   return di::make<typename std::remove_cvref_t<decltype(t)>::value_type>(t);
+}
+namespace detail {
+template<class T_>
+struct provider_t {
+  constexpr provider_t(T_&& t = {}) : t{std::forward<T_>(t)} { }
+  template<class T> constexpr operator T() { return make<T>(t); }
+  template<class T> constexpr operator T&() const { return make<T&>(t); }
+  template<class T> constexpr operator const T&() const { return make<const T&>(t); }
+  template<class T> constexpr operator T&&() const { return make<T&&>(t); }
+
+ private:
+  T_ t;
+};
+} // namespace detail
+[[nodiscard]] constexpr auto make(auto&& t) {
+  return detail::provider_t{[](auto t) { return decltype(t.type()){}; }};
 }
 } // namespace di
 
