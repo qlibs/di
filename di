@@ -23,7 +23,7 @@
 //
 #if 0
 // -->
-[Overview](#Overview) / [Examples](#Examples) / [API](#API) / [FAQ](#FAQ)
+[Overview](#Overview) / [Examples](#Examples) / [API](#API) / [FAQ](#FAQ) / [Resources](#Resources)
 
 ## DI: Dependency Injection library
 
@@ -527,156 +527,161 @@ template<class T>
 
 ### FAQ
 
-- Dependency Injection?
+> - Dependency Injection?
+>
+>   Dependency Injection (DI) - https://en.wikipedia.org/wiki/Dependency_injection - it's a technique focusing on producing loosely coupled code.
+>
+>   ```cpp
+>   struct no_di {
+>     constexpr no_di() { } // No DI
+>
+>    private:
+>     int data = 42; // coupled
+>   };
+>
+>   struct di {
+>     constexpr di(int data) : data{data} { } // DI
+>
+>    private:
+>      int data{};
+>   };
+>   ```
+>
+>   - In a very simplistic view, DI is about passing objects/types/etc via constructors and/or other forms of parameter propagating techniques instead of coupling values/types directly (`Hollywood Principle - Don't call us we'll call you`).
+>   - The main goal of DI is the flexibility of changing what's being injected. It's important though, what and how is being injected as that influences how good (`ETC - Easy To Change`) the design will be - more about it here - https://www.youtube.com/watch?v=yVogS4NbL6U.
+>
+> - Manual vs Automatic Dependency Injection?
+>
+>   Depedency Injection doesnt imply using a library.
+>   Automatic DI requires a library and makes more sense for larger projects as it helps limitting the wiring mess and the maintenance burden assosiated with it.
+>
+>   ```cpp
+>   struct coffee_maker {
+>     coffee_maker(); // No DI
+>
+>    private:
+>     basic_heater heater{}; // coupled
+>     basic_pump pump{}; // coupled
+>   };
+>
+>   struct coffee_maker_v1 {
+>     coffee_maker(iheater&, ipump& pump); // DI
+>
+>    private:
+>     iheater& heater; // not coupled
+>     ipump& pump; // not coupled
+>   };
+>
+>   struct coffee_maker_v2 {
+>     coffee_maker(std::shared_ptr<ipump>, std::unique_ptr<iheater>); // DI
+>
+>    private:
+>     std::shared_ptr<ipump> pump; // not coupled
+>     std::unique_ptr<iheater> heater; // not coupled
+>   };
+>
+>   int main() {
+>     // Manual Dependency Injection
+>     {
+>       basic_heater heater{};
+>       basic_pump pump{};
+>       coffe_maker_v1 cm{heater, pump};
+>     }
+>     {
+>       auto pump = std::make_shared<basic_pump>();
+>       auto heater = std::make_unique<basic_heater>();
+>       coffe_maker_v2 cm{pump, std::move(heater)}; // different wiring
+>     }
+>
+>     // Automatic Dependency Injection
+>     auto wiring = di::overload{
+>       [](di::is<iheater> auto) { return make<basic_heater>(); },
+>       [](di::is<ipump> auto)   { return make<basic_pump>(); },
+>     };
+>     {
+>       auto cm = di::make<coffee_maker_v1>(wiring);
+>     }
+>     {
+>       auto cm = di::make<coffee_maker_v2>(wiring); // same wiring
+>     }
+>   }
+>   ```
+>
+>   The main goal of automatic is to **avoid design compromises** in order to reduce the boilerplate code/minimize maintance burden/simplify testing.
+>
+> - How does it work?
+>
+>   `DI` works by deducing constructor parameters and calling appropriate overload to handle them by leavaring concepts - https://eel.is/c++draft/temp.constr.order#def:constraint,subsumption.
+>   The following represents the most important parts of the library design.
+>
+>   ```cpp
+>   template<class B, class T>
+>   concept copy_or_move = std::is_same_v<B, std::remove_cvref_t<T>>;
+>
+>   template<class B, std::size_t N> struct any {
+>     template<class T> requires (not copy_or_move<B, T>)
+>       operator T() noexcept(noexcept(bind<arg<B, N>, T>{}));
+>     template<class T> requires (not copy_or_move<B, T>)
+>       operator T&() const noexcept(noexcept(bind<arg<B, N>, T&>{}));
+>     template<class T> requires (not copy_or_move<B, T>)
+>       operator const T&() const noexcept(noexcept(bind<arg<B, N>, const T&>{}));
+>     template<class T> requires (not copy_or_move<B, T>)
+>       operator T&&() const noexcept(noexcept(bind<arg<B, N>, T&&>{}));
+>   };
+>   ```
+>
+>   ```cpp
+>   template<class T, std::size_t N = 16u> constexpr auto ctor_traits() {
+>     return []<std::size_t... Ns>(std::index_sequence<Ns...>) {
+>       if constexpr (requires { T{any<T, Ns>{}...}; }) {
+>         return type_list<typename decltype(get(detail::arg<T, Ns>{}))::value_type...>{};
+>       } else if constexpr (sizeof...(Ns)) {
+>         return ctor_traits<T, N - 1u>();
+>       } else {
+>         return type_list{};
+>       }
+>     }(std::make_index_sequence<N>{});
+>   }
+>   ```
+>
+>   ```cpp
+>   template<class... Ts> struct overload : Ts... { using Ts::operator()...; };
+>   template<class... Ts> overload(Ts...) -> overload<Ts...>;
+>   ```
+>
+>   ```cpp
+>   template<class T, class...> auto error(auto&&...) -> T;
+>   template<class T> constexpr auto make(invocable auto&& t) {
+>     return [&]<template<class...> class TList, class... Ts>(TList<Ts...>) {
+>       if constexpr (requires { T{t(provider<Ts>(t)...); }; }) {
+>         return T{t(provider<Ts>(t)...};
+>       } else {
+>         return error<T>(t);
+>       }
+>     }(ctor_traits<T>());
+>   };
+>   ```
+>
+> - How to disable running tests at compile-time?
+>
+>   When `-DNTEST` is defined static_asserts tests wont be executed upon include.
+>   Note: Use with caution as disabling tests means that there are no gurantees upon include that given compiler/env combination works as expected.
+>
+> - Similar projects?
+>  [boost-ext.di](https://github.com/boost-ext/di), [google.fruit](https://github.com/google/fruit), [kangaru](https://github.com/gracicot/kangaru), [wallaroo](https://wallaroolib.sourceforge.net), [hypodermic](https://github.com/ybainier/Hypodermic), [dingo](https://github.com/romanpauk/dingo)
 
-  > Dependency Injection (DI) - https://en.wikipedia.org/wiki/Dependency_injection - it's a technique focusing on producing loosely coupled code.
+### Resources
 
-    ```cpp
-    struct no_di {
-      constexpr no_di() { } // No DI
+> - ["Dependency Injection - a 25-dollar term for a 5-cent concept"](https://www.youtube.com/watch?v=yVogS4NbL6U) (video)
+> - ["Law of Demeter: A Practical Guide to Loose Coupling"](https://www.youtube.com/watch?v=QZkVpZlbM4U) (video)
+> - ["Clean Code: A Handbook of Agile Software Craftsmanship"](https://www.amazon.com/Clean-Code-Handbook-Software-Craftsmanship/dp/0132350882) (book)
+> - ["The Pragmatic Programmer"](https://www.amazon.com/Pragmatic-Programmer-journey-mastery-Anniversary/dp/0135957052/ref=pd_sbs_d_sccl_3_1/140-7224166-5387863?pd_rd_w=muV95&content-id=amzn1.sym.156274ff-6322-443d-8bbf-ab3ed87e382f&pf_rd_p=156274ff-6322-443d-8bbf-ab3ed87e382f&pf_rd_r=ECRZDQ02XA134FQJJQDE&pd_rd_wg=ELPtc&pd_rd_r=49d9e9b3-a8b1-4532-b3b3-16711496a3d3&pd_rd_i=0135957052&psc=1) (book)
+> - ["Design Patterns"](https://www.amazon.com/Design-Patterns-Object-Oriented-Addison-Wesley-Professional-ebook/dp/B000SEIBB8) (book)
+> - ["Test Driven Development: By Example"](https://www.amazon.com/Test-Driven-Development-Kent-Beck/dp/0321146530) (book)
 
-     private:
-      int data = 42; // coupled
-    };
+### License
 
-    struct di {
-      constexpr di(int data) : data{data} { } // DI
-
-     private:
-       int data{};
-    };
-    ```
-
-    - In a very simplistic view, DI is about passing objects/types/etc via constructors and/or other forms of parameter propagating techniques instead of coupling values/types directly (`Hollywood Principle - Don't call us we'll call you`).
-    - The main goal of DI is the flexibility of changing what's being injected. It's important though, what and how is being injected as that influences how good (`ETC - Easy To Change`) the design will be - more about it here - https://www.youtube.com/watch?v=yVogS4NbL6U.
-
-- Manual vs Automatic Dependency Injection?
-
-  > Depedency Injection doesnt imply using a library.
-    Automatic DI requires a library and makes more sense for larger projects as it helps limitting the wiring mess and the maintenance burden assosiated with it.
-
-    ```cpp
-    struct coffee_maker {
-      coffee_maker(); // No DI
-
-     private:
-      basic_heater heater{}; // coupled
-      basic_pump pump{}; // coupled
-    };
-
-    struct coffee_maker_v1 {
-      coffee_maker(iheater&, ipump& pump); // DI
-
-     private:
-      iheater& heater; // not coupled
-      ipump& pump; // not coupled
-    };
-
-    struct coffee_maker_v2 {
-      coffee_maker(std::shared_ptr<ipump>, std::unique_ptr<iheater>); // DI
-
-     private:
-      std::shared_ptr<ipump> pump; // not coupled
-      std::unique_ptr<iheater> heater; // not coupled
-    };
-
-    int main() {
-      // Manual Dependency Injection
-      {
-        basic_heater heater{};
-        basic_pump pump{};
-        coffe_maker_v1 cm{heater, pump};
-      }
-      {
-        auto pump = std::make_shared<basic_pump>();
-        auto heater = std::make_unique<basic_heater>();
-        coffe_maker_v2 cm{pump, std::move(heater)}; // different wiring
-      }
-
-      // Automatic Dependency Injection
-      auto wiring = di::overload{
-        [](di::is<iheater> auto) { return make<basic_heater>(); },
-        [](di::is<ipump> auto)   { return make<basic_pump>(); },
-      };
-      {
-        auto cm = di::make<coffee_maker_v1>(wiring);
-      }
-      {
-        auto cm = di::make<coffee_maker_v2>(wiring); // same wiring
-      }
-    }
-    ```
-
-    > The main goal of automatic is to **avoid design compromises** in order to reduce the boilerplate code/minimize maintance burden/simplify testing.
-
-- How does it work?
-
-  > `DI` works by deducing constructor parameters and calling appropriate overload to handle them by leavaring concepts - https://eel.is/c++draft/temp.constr.order#def:constraint,subsumption.
-    The following represents the most important parts of the library design.
-
-    ```cpp
-    template<class B, class T>
-    concept copy_or_move = std::is_same_v<B, std::remove_cvref_t<T>>;
-
-    template<class B, std::size_t N> struct any {
-      template<class T> requires (not copy_or_move<B, T>)
-        operator T() noexcept(noexcept(bind<arg<B, N>, T>{}));
-      template<class T> requires (not copy_or_move<B, T>)
-        operator T&() const noexcept(noexcept(bind<arg<B, N>, T&>{}));
-      template<class T> requires (not copy_or_move<B, T>)
-        operator const T&() const noexcept(noexcept(bind<arg<B, N>, const T&>{}));
-      template<class T> requires (not copy_or_move<B, T>)
-        operator T&&() const noexcept(noexcept(bind<arg<B, N>, T&&>{}));
-    };
-    ```
-
-    ```cpp
-    template<class T, std::size_t N = 16u> constexpr auto ctor_traits() {
-      return []<std::size_t... Ns>(std::index_sequence<Ns...>) {
-        if constexpr (requires { T{any<T, Ns>{}...}; }) {
-          return type_list<typename decltype(get(detail::arg<T, Ns>{}))::value_type...>{};
-        } else if constexpr (sizeof...(Ns)) {
-          return ctor_traits<T, N - 1u>();
-        } else {
-          return type_list{};
-        }
-      }(std::make_index_sequence<N>{});
-    }
-    ```
-
-    ```cpp
-    template<class... Ts> struct overload : Ts... { using Ts::operator()...; };
-    template<class... Ts> overload(Ts...) -> overload<Ts...>;
-    ```
-
-    ```cpp
-    template<class T, class...> auto error(auto&&...) -> T;
-    template<class T> constexpr auto make(invocable auto&& t) {
-      return [&]<template<class...> class TList, class... Ts>(TList<Ts...>) {
-        if constexpr (requires { T{t(provider<Ts>(t)...); }; }) {
-          return T{t(provider<Ts>(t)...};
-        } else {
-          return error<T>(t);
-        }
-      }(ctor_traits<T>());
-    };
-    ```
-
-- How to disable running tests at compile-time?
-
-    > When `-DNTEST` is defined static_asserts tests wont be executed upon include.
-    Note: Use with caution as disabling tests means that there are no gurantees upon include that given compiler/env combination works as expected.
-
-- Acknowledgments
-  > - ["Dependency Injection - a 25-dollar term for a 5-cent concept"](https://www.youtube.com/watch?v=yVogS4NbL6U) (video)
-  > - ["Law of Demeter: A Practical Guide to Loose Coupling"](https://www.youtube.com/watch?v=QZkVpZlbM4U) (video)
-  > - ["Clean Code: A Handbook of Agile Software Craftsmanship"](https://www.amazon.com/Clean-Code-Handbook-Software-Craftsmanship/dp/0132350882) (book)
-  > - ["The Pragmatic Programmer"](https://www.amazon.com/Pragmatic-Programmer-journey-mastery-Anniversary/dp/0135957052/ref=pd_sbs_d_sccl_3_1/140-7224166-5387863?pd_rd_w=muV95&content-id=amzn1.sym.156274ff-6322-443d-8bbf-ab3ed87e382f&pf_rd_p=156274ff-6322-443d-8bbf-ab3ed87e382f&pf_rd_r=ECRZDQ02XA134FQJJQDE&pd_rd_wg=ELPtc&pd_rd_r=49d9e9b3-a8b1-4532-b3b3-16711496a3d3&pd_rd_i=0135957052&psc=1) (book)
-  > - ["Design Patterns"](https://www.amazon.com/Design-Patterns-Object-Oriented-Addison-Wesley-Professional-ebook/dp/B000SEIBB8) (book)
-  > - ["Test Driven Development: By Example"](https://www.amazon.com/Test-Driven-Development-Kent-Beck/dp/0321146530) (book)
-
-- Similar projects?
-  > [boost-ext.di](https://github.com/boost-ext/di), [google.fruit](https://github.com/google/fruit), [kangaru](https://github.com/gracicot/kangaru), [wallaroo](https://wallaroolib.sourceforge.net), [hypodermic](https://github.com/ybainier/Hypodermic), [dingo](https://github.com/romanpauk/dingo)
+> - [MIT](LICENSE)
 
 <!--
 #endif
