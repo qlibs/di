@@ -634,7 +634,7 @@ template<class T>
 >   template<class T, std::size_t N = 16u> constexpr auto ctor_traits() {
 >     return []<std::size_t... Ns>(std::index_sequence<Ns...>) {
 >       if constexpr (requires { T{any<T, Ns>{}...}; }) {
->         return type_list<typename decltype(get(detail::arg<T, Ns>{}))::value_type...>{};
+>         return type_list<decltype(get(arg<T, Ns>{}))...>{};
 >       } else if constexpr (sizeof...(Ns)) {
 >         return ctor_traits<T, N - 1u>();
 >       } else {
