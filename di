@@ -36,7 +36,7 @@
 
 ### Features
 
-- Single header (https://raw.githubusercontent.com/qlibs/di/main/di)
+- Single header (https://raw.githubusercontent.com/qlibs/di/main/di) / C++20 module (https://raw.githubusercontent.com/qlibs/di/main/di.cppm)
 - Verifies itself upon include (can be disabled with `-DNTEST` - see [FAQ](#faq))
 - Minimal [API](#api)
   - Unified way for different polymorphism styles (`inheritance, type erasure, variant, ...`)
