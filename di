@@ -433,7 +433,7 @@ static_assert(not is_structural<c5>);
 ### API
 
 ```cpp
-namespace di::inline v1_0_5 {
+namespace di::inline v1_0_6 {
 /**
  * @code
  * struct c1 { c1(int) { } };
@@ -694,7 +694,7 @@ template<class T>
 #include <type_traits>
 #include <memory>
 
-namespace di::inline v1_0_5 {
+namespace di::inline v1_0_6 {
 namespace detail {
 template<class... Ts> struct type_list {
   static constexpr auto size() { return sizeof...(Ts); }
