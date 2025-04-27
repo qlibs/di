@@ -851,22 +851,6 @@ template<class R, class T>
   -> decltype(di::make<typename std::remove_cvref_t<decltype(t)>::value_type>(t)) {
   return di::make<typename std::remove_cvref_t<decltype(t)>::value_type>(t);
 }
-namespace detail {
-template<class T_>
-struct provider_t {
-  constexpr provider_t(T_&& t = {}) : t{std::forward<T_>(t)} { }
-  template<class T> constexpr operator T() { return make<T>(t); }
-  template<class T> constexpr operator T&() const { return make<T&>(t); }
-  template<class T> constexpr operator const T&() const { return make<const T&>(t); }
-  template<class T> constexpr operator T&&() const { return make<T&&>(t); }
-
- private:
-  T_ t;
-};
-} // namespace detail
-[[nodiscard]] constexpr auto make(auto&& t) {
-  return detail::provider_t{[](auto t) { return decltype(t.type()){}; }};
-}
 } // namespace di
 
 #ifndef NTEST
