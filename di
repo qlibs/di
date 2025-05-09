@@ -25,7 +25,7 @@
 // -->
 [Overview](#Overview) / [Examples](#Examples) / [API](#API) / [FAQ](#FAQ) / [Resources](#Resources)
 
-## `di`: Dependency Injection library
+## `DI`: Dependency Injection library
 
 [![MIT Licence](http://img.shields.io/badge/license-MIT-blue.svg)](https://opensource.org/license/mit)
 [![Version](https://img.shields.io/github/v/release/qlibs/di)](https://github.com/qlibs/di/releases)
