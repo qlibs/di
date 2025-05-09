@@ -32,7 +32,7 @@
 [![Build](https://img.shields.io/badge/build-green.svg)](https://godbolt.org/z/fKEcojqze)
 [![Try it online](https://img.shields.io/badge/try%20it-online-blue.svg)](https://godbolt.org/z/xrzsYG1bj)
 
-  > https://en.wikipedia.org/wiki/Dependency_injection (for additional info see [FAQ](#faq))
+  > https://en.wikipedia.org/wiki/Dependency_injection
 
 ### Features
 
@@ -50,8 +50,6 @@
 ### Requirements
 
 - C++20 ([clang++13+, g++11+](https://en.cppreference.com/w/cpp/compiler_support))
-
----
 
 ### Overview
 
@@ -289,8 +287,6 @@ constexpr auto generic = di::overload{
 // and more (see API)...
 ```
 
----
-
 ### Examples
 
 > DIY - Dependency Injection Yourself (https://godbolt.org/z/acE3rYar5)
@@ -428,8 +424,6 @@ struct c5 { private: constexpr c5(auto...) {} };
 static_assert(not is_structural<c5>);
 ```
 
-----
-
 ### API
 
 ```cpp
@@ -522,8 +516,6 @@ template<class T>
 [[nodiscard]] constexpr auto make(auto&&...);
 } // namespace di
 ```
-
----
 
 ### FAQ
 
