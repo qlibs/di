@@ -665,7 +665,7 @@ template<class T>
 ### Resources
 
 > - Dependency Injection - a 25-dollar term for a 5-cent concept - https://www.youtube.com/watch?v=yVogS4NbL6U
-> - Law of Demeter: A Practical Guide to Loose Coupling](https://www.youtube.com/watch?v=QZkVpZlbM4U
+> - Law of Demeter: A Practical Guide to Loose Coupling - https://www.youtube.com/watch?v=QZkVpZlbM4U
 > - Clean Code: A Handbook of Agile Software Craftsmanship - https://www.amazon.com/Clean-Code-Handbook-Software-Craftsmanship/dp/0132350882
 > - The Pragmatic Programmer - https://www.amazon.com/Pragmatic-Programmer-journey-mastery-Anniversary/dp/0135957052
 > - Design Patterns - https://www.amazon.com/Design-Patterns-Object-Oriented-Addison-Wesley-Professional-ebook/dp/B000SEIBB8
